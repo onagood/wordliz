@@ -15,8 +15,32 @@
   --hit:#0F6E72; --hit-deep:#0A4F52;
   --warm:#C98A1E; --warm-deep:#9A6608; --warm-tint:#F0E2C4;
   --acc:#A81D4B; --acc-deep:#7C1237;
+  --tile-alt:#E7EAE4; --red-wash:rgba(168,29,75,.06); --socket-bg:rgba(0,0,0,.02);
   --sans:'Golos Text',system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+/* dark palette — follows the system by default, or forced via data-theme */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#161C1B; --ground-2:#1F2624; --frame:#2E3835;
+    --ink:#E4EAE7; --ink-soft:#8FA09A;
+    --tile:#242C2A; --tile-edge:#3A453F; --tile-alt:#1D2422;
+    --hit:#158288; --hit-deep:#0A4F52;
+    --warm:#D89A2B; --warm-deep:#E5B964; --warm-tint:#332A18;
+    --acc:#C43E68; --acc-deep:#A81D4B;
+    --red-wash:rgba(196,62,104,.12); --socket-bg:rgba(255,255,255,.03);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#161C1B; --ground-2:#1F2624; --frame:#2E3835;
+  --ink:#E4EAE7; --ink-soft:#8FA09A;
+  --tile:#242C2A; --tile-edge:#3A453F; --tile-alt:#1D2422;
+  --hit:#158288; --hit-deep:#0A4F52;
+  --warm:#D89A2B; --warm-deep:#E5B964; --warm-tint:#332A18;
+  --acc:#C43E68; --acc-deep:#A81D4B;
+  --red-wash:rgba(196,62,104,.12); --socket-bg:rgba(255,255,255,.03);
+  color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
@@ -65,7 +89,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
 .how li{display:flex;gap:9px;align-items:flex-start}
 .sw{width:15px;height:15px;border-radius:4px;flex:0 0 15px;margin-top:3px}
 .sw.g{background:var(--hit)} .sw.a{background:var(--warm-tint);border:1px solid var(--warm)}
-.sw.r{background:rgba(168,29,75,.06);border:1px dashed var(--acc)}
+.sw.r{background:var(--red-wash);border:1px dashed var(--acc)}
 .cv{margin-top:auto;padding-top:20px;text-align:center;font-size:.78rem;color:var(--ink-soft)}
 .cv b{color:var(--ink);font-family:var(--mono);font-size:1.05rem}
 
@@ -112,7 +136,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
 .boardwrap{flex:0 0 auto;width:var(--bw)}
 .board{position:relative;width:100%;transition:height .25s ease;touch-action:none;overflow:hidden}
 .socket{position:absolute;top:0;left:0;border-radius:6px;border:1px dashed var(--frame);
-  background:rgba(0,0,0,.02);pointer-events:none}
+  background:var(--socket-bg);pointer-events:none}
 .nudge{border:0;background:transparent;color:var(--ink-soft);font-family:var(--mono);font-size:1rem;
   line-height:1;cursor:pointer;border-radius:6px;height:26px;transition:background .12s,color .12s}
 .nudge:hover:not(:disabled){background:var(--ground-2);color:var(--acc)}
@@ -121,9 +145,9 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
 .tile{position:absolute;top:0;left:0;display:grid;place-items:center;border-radius:6px;
   background:var(--tile);border:1px solid var(--tile-edge);font-family:var(--mono);font-weight:600;color:var(--ink);
   transition:transform .15s cubic-bezier(.3,.7,.3,1),background .18s,border-color .18s,opacity .22s;will-change:transform}
-.tile.alt{background:#E7EAE4}
+.tile.alt{background:var(--tile-alt)}
 .tile.notrans{transition:background .18s,border-color .18s,opacity .22s}
-.tile.pale{border-color:var(--acc);border-style:dashed;color:var(--acc);background:rgba(168,29,75,.06)}
+.tile.pale{border-color:var(--acc);border-style:dashed;color:var(--acc);background:var(--red-wash)}
 .tile.warm{background:var(--warm-tint);border-color:var(--warm);color:var(--warm-deep)}
 .tile.hit{background:var(--hit);border-color:var(--hit-deep);color:#E3EFEF}
 .tile.gone{opacity:0}
@@ -152,6 +176,11 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
 @keyframes cueV{0%,100%{margin-top:-12px}50%{margin-top:12px}}
 @media(prefers-reduced-motion:reduce){#tutCue{animation:none!important}}
 /* ---------- overlay ---------- */
+.confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.confetti i{position:absolute;top:-16px;width:10px;height:14px;border-radius:2px;opacity:.95;
+  animation:cfall linear forwards}
+@keyframes cfall{to{transform:translateY(108vh) rotate(var(--rot,540deg))}}
+@media(prefers-reduced-motion:reduce){.confetti{display:none}}
 .veil{position:fixed;inset:0;background:rgba(28,42,43,.55);display:none;
   align-items:center;justify-content:center;padding:20px;z-index:10}
 .veil.on{display:flex}
@@ -193,6 +222,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
     <div class="tools">
       <button class="tool" id="bRules">How to play</button>
       <button class="tool" id="bStats">Stats</button>
+      <button class="tool" id="bThm"></button>
       <button class="tool" id="bSnd"></button>
       <button class="tool" id="bHap"></button>
     </div>
@@ -704,7 +734,7 @@ function refresh(){
   else if(lastRed) h.innerHTML=`<b style="color:var(--acc)">${lastRed}</b> is a real word, but not one of the ${N}. <b>+1 point</b>`;
   else if(mode==='free'&&career.points>=HINT_COST) h.textContent='Tap a clue to aim a hint at that word, or use the button for whichever needs it most.';
   else h.textContent=`Each word you find reveals a letter in ${N>=6?'two of':'one of'} the others.`;
-  paintHap(); paintSnd(); paintPick();
+  paintHap(); paintSnd(); paintThm(); paintPick();
   el('cv').innerHTML=`<b>${career.points}</b> points to spend on hints and continues`;
 }
 
@@ -879,6 +909,26 @@ function showEnd(){
   el('bAgain').onclick=()=>start(mode);
   el('bMenu').onclick=()=>{el('veil').classList.remove('on');show('scMenu');refresh();};
   el('veil').classList.add('on');
+  if(done==='win') confetti();
+}
+function confetti(){
+  const veil=el('veil');
+  veil.querySelector('.confetti')?.remove();
+  const box=document.createElement('div'); box.className='confetti';
+  const colors=['#0F6E72','#C98A1E','#A81D4B','#EFF1EC','#158288','#E5B964'];
+  for(let i=0;i<54;i++){
+    const p=document.createElement('i');
+    p.style.left=(Math.random()*100)+'%';
+    p.style.background=colors[i%colors.length];
+    p.style.setProperty('--rot',(360+Math.random()*720|0)+'deg');
+    p.style.animationDuration=(2.1+Math.random()*1.6).toFixed(2)+'s';
+    p.style.animationDelay=(Math.random()*0.9).toFixed(2)+'s';
+    p.style.width=(7+Math.random()*7|0)+'px';
+    p.style.height=(10+Math.random()*8|0)+'px';
+    box.appendChild(p);
+  }
+  veil.prepend(box);
+  setTimeout(()=>box.remove(),4600);
 }
 function askHint(t){
   if(done||paused||mode!=='free'||career.points<HINT_COST) return;
@@ -927,6 +977,19 @@ el('bHap').onclick=()=>{
   career.haptics=!career.haptics; Haptics.on=career.haptics;
   if(career.haptics) Haptics.tick();
   paintHap(); save();
+};
+function applyTheme(){
+  const t=career.theme||'auto', de=document.documentElement;
+  if(t==='auto') delete de.dataset.theme; else de.dataset.theme=t;
+}
+function paintThm(){
+  const t=career.theme||'auto';
+  el('bThm').textContent = t==='auto' ? 'Theme: auto' : (t==='dark'?'Theme: dark':'Theme: light');
+}
+el('bThm').onclick=()=>{
+  const order=['auto','dark','light'];
+  career.theme=order[(order.indexOf(career.theme||'auto')+1)%3];
+  applyTheme(); paintThm(); save();
 };
 function paintSnd(){
   const b=el('bSnd');
@@ -1135,6 +1198,7 @@ async function load(){
     Object.assign(career,JSON.parse(j));
     Haptics.on=career.haptics!==false;
     Sfx.on=career.sound!==false;
+    applyTheme();
     if(career.daily && career.daily.date!==todayKey() && career.daily.date!==yesterKey()) career.streak=0;
     refresh();
   }catch(e){}
