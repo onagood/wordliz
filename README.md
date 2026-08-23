@@ -5,8 +5,8 @@ slide whole rows and columns until the words line up.
 
 **Play: https://onagood.github.io/wordliz/**
 
-Single source — `index.html` + `words_en.js`. No dependencies, no bundler;
-the whole engine lives in one file.
+Single source — `index.html` + `words_en.js` + `gloss_en.js`. No dependencies,
+no bundler; the whole engine lives in one file.
 
 ## Build
 
@@ -18,7 +18,7 @@ node build.js
 |---|---|
 | `dist/web/` | GitHub Pages / any static host |
 | `dist/wordliz-itch.zip` | itch.io (index.html at archive root) |
-| `dist/artifact.html` | self-contained single file, dictionary inlined |
+| `dist/artifact.html` | self-contained single file, dictionary and glossary inlined |
 
 ## Shipping updates
 
@@ -36,6 +36,13 @@ node build.js
 with a profanity/slur blocklist applied.
 
 More languages follow the same shape: `words_ru.js` etc.
+
+`gloss_en.js` — one short meaning per dictionary word, shown for banked and
+“red” words. Rebuilt with `node glossary.js <wordnet-dict-dir>` whenever
+`words_en.js` changes (see the header of `glossary.js`). Derived from
+[WordNet 3.1](https://wordnet.princeton.edu/) © Princeton University, used
+under the [WordNet license](https://wordnet.princeton.edu/license-and-commercial-use).
+Function words (pronouns, prepositions) intentionally have no entry.
 
 **Warning:** the `s` list is part of the board generator. Any change to it
 changes every board code and daily deal.
