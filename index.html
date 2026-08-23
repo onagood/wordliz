@@ -430,6 +430,8 @@ const dailySeed=()=>{const d=new Date();
   return (d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate())>>>0;};
 let grid=[], tiles=new Map(), nextId=0, targets=[];
 let mv=0, found=0, score=0, timeLeft=0, clock=null;
+let dirs={L:0,R:0,U:0,D:0};
+const dirSig=()=>`\u2192${dirs.R} \u2190${dirs.L} \u2191${dirs.U} \u2193${dirs.D}`;
 let done=null, endgame=false, busy=false, paused=false;
 let usedContinue=false, bankedScore=0, step=0, gap=6, hintsUsed=0;
 let t0=0, tAcc=0, reds=0;
@@ -473,6 +475,7 @@ function deal(s){
     }
   } while(++guard<6 && idx(N).some(r=>rowState(r)>=2));
   mv=0; found=0; score=0; done=null; usedContinue=false; bankedScore=0; hintsUsed=0; undoState=null;
+  dirs={L:0,R:0,U:0,D:0};
   stopClock(); timeLeft=60; t0=0; tAcc=0; reds=0; foundReal.clear();
   build(); refresh();
 }
@@ -480,11 +483,11 @@ function rawRow(r,d){const a=grid[r],n=a.length,o=new Array(n);for(let i=0;i<n;i
 function rawCol(c,d){const h=grid.length;if(h<2)return;const col=grid.map(x=>x[c]),o=new Array(h);
   for(let i=0;i<h;i++)o[(i+d+h)%h]=col[i];for(let i=0;i<h;i++)grid[i][c]=o[i];}
 let undoState=null;
-const pushUndo=()=>{undoState={g:grid.map(r=>[...r]),mv}};
-function shiftRow(r,d){if(done||busy||paused)return;if(tut&&!tutAllows('r',r,d))return;pushUndo();rawRow(r,d);mv++;Haptics.tick();Sfx.tick();
+const pushUndo=()=>{undoState={g:grid.map(r=>[...r]),mv,dirs:{...dirs}}};
+function shiftRow(r,d){if(done||busy||paused)return;if(tut&&!tutAllows('r',r,d))return;pushUndo();rawRow(r,d);mv++;dirs[d>0?'R':'L']++;Haptics.tick();Sfx.tick();
   if(mode==='free'&&!clock)startClock();
   paint({t:'r',i:r,d});scanReds();refresh();sweep();if(tut)tutMoved();}
-function shiftCol(c,d){if(done||busy||paused||grid.length<2)return;if(tut&&!tutAllows('c',c,d))return;pushUndo();rawCol(c,d);mv++;Haptics.tick();Sfx.tick();
+function shiftCol(c,d){if(done||busy||paused||grid.length<2)return;if(tut&&!tutAllows('c',c,d))return;pushUndo();rawCol(c,d);mv++;dirs[d>0?'D':'U']++;Haptics.tick();Sfx.tick();
   if(mode==='free'&&!clock)startClock();
   paint({t:'c',i:c,d});scanReds();refresh();sweep();if(tut)tutMoved();}
 
@@ -792,6 +795,7 @@ function startTutorial(){
   grid.push([...'ypla'].map(mkTile));
   grid.push([...'ordw'].map(mkTile));
   mv=0; found=0; score=0; done=null; usedContinue=false; bankedScore=0; hintsUsed=0; undoState=null;
+  dirs={L:0,R:0,U:0,D:0};
   stopClock(); timeLeft=60; t0=0; tAcc=0; reds=0; foundReal.clear();
   tut={step:1};
   build(); refresh();
@@ -885,7 +889,7 @@ function showEnd(){
     (done==='timeup'&&found===career.hardBest&&found>0?'<p class="sub" style="color:var(--hit)">New best.</p>':'')+
     (words?`<div class="found">${words}</div>`:'')+
     `<p class="sub" style="margin-top:14px;font-family:var(--mono);font-size:.72rem;letter-spacing:.1em">`+
-      `${isDaily?'DAILY · ':''}DEAL ${dealCode()}</p>`+
+      `${isDaily?'DAILY · ':''}DEAL ${dealCode()}`+(mv?`<br>${dirSig()}`:'')+`</p>`+
     `<button class="btn ghost" id="bShare">Share this deal</button>`+
     (canCont?`<button class="btn primary" id="bCont">Continue · ${CONT_COST} pts for ${CONT_TIME}s</button>`:'')+
     `<button class="btn${canCont?' ghost':' primary'}" id="bAgain">Play again</button>`+
@@ -897,10 +901,10 @@ function showEnd(){
   };
   el('bShare').onclick=()=>{
     const line = (done==='win' ? `solved in ${mv} moves`
-      : (mode==='hard' ? `${found} words, ${score} pts` : `${found}/5 found`))
+      : (mode==='hard' ? `${found} words, ${score} pts` : `${found}/${N} found`))
       + (hintsUsed?` (${hintsUsed} hint${hintsUsed>1?'s':''})`:'');
     const url=location.origin+location.pathname+'#'+dealCode();
-    const txt=`Wordliz — ${isDaily?'daily board':'board '+dealCode()}\n${line}\nSame board: ${url}`;
+    const txt=`Wordliz — ${isDaily?'daily board':'board '+dealCode()}\n${line}`+(mv?`\n${dirSig()}`:'')+`\nSame board: ${url}`;
     const ok=()=>{el('bShare').textContent='Copied — send it to anyone';};
     if(navigator.share) navigator.share({text:txt}).catch(()=>{
       navigator.clipboard?.writeText(txt).then(ok,()=>{});});
@@ -1068,7 +1072,7 @@ function shareDaily(){
 el('bPause').onclick=showPause;
 el('bUndo').onclick=()=>{
   if(!undoState||done||busy||paused||tut) return;
-  grid=undoState.g.map(r=>[...r]); mv=undoState.mv; undoState=null;
+  grid=undoState.g.map(r=>[...r]); mv=undoState.mv; dirs={...undoState.dirs}; undoState=null;
   Haptics.tick(); Sfx.tick(); paint(null); refresh();
 };
 /* the hint goes to the word with the fewest letters revealed */
@@ -1145,6 +1149,7 @@ function endDrag(apply){
     const dir=n>0?1:-1;
     for(let i=0;i<Math.abs(n);i++){ if(d.axis==='r')rawRow(d.r,dir); else rawCol(d.c,dir); }
     mv+=Math.abs(n);
+    dirs[d.axis==='r'?(dir>0?'R':'L'):(dir>0?'D':'U')]+=Math.abs(n);
     if(mode==='free'&&!clock)startClock();
   }
   for(const it of d.items){                    /* snap real tiles to wrapped positions */
