@@ -39,8 +39,3 @@ More languages follow the same shape: `words_ru.js` etc.
 
 **Warning:** the `s` list is part of the board generator. Any change to it
 changes every board code and daily deal.
-
-## License
-
-© 2026 onagood. All rights reserved. The source is public for reading;
-no license to copy, modify, or redistribute is granted.
