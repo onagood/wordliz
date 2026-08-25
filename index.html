@@ -379,11 +379,152 @@ const LANGS={
   en:{name:'English', letter:'', dictFile:'words_en.js', glossFile:'gloss_en.js',
       tut:null, str:null, rules:null}
 };
+/* Russian plural: 1 ход, 2 хода, 5 ходов */
+const ruN=(n,one,few,many)=>{n=Math.abs(n);
+  if(n%10===1&&n%100!==11) return one;
+  if(n%10>=2&&n%10<=4&&(n%100<12||n%100>14)) return few;
+  return many;};
+LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:null,
+  tut:{words:['игра','темп'],rows:['аигр','емпт'],steps:[null,
+    {t:'r',i:0,d:-1,msg:'Обе строки <b>янтарные</b> — буквы те, порядок нет. Сдвиньте верхнюю строку <b>влево</b>: вся линия едет как одно целое.'},
+    {t:'c',i:3,d:1, msg:'ИГРА забанковалась — вот и вся победа. Теперь <b>ТЕМП</b>: пустой ряд снизу — парковка. Потяните <b>последний столбец вниз</b>.'},
+    {t:'r',i:0,d:1, msg:'Прокрутите верхнюю строку <b>вправо</b>, чтобы пропуск оказался первым.'},
+    {t:'r',i:1,d:1, msg:'Сдвиньте нижний ряд <b>вправо</b> — буква Т хочет встать под пропуск.'},
+    {t:'c',i:0,d:-1,msg:'Поднимите <b>первый столбец вверх</b>. Вот и вся игра.'}]},
+  str:{
+    'Every letter is on the table. The words are hidden. Slide the grid until they line up.':'Все буквы уже на столе. Слова спрятаны. Двигайте сетку, пока они не соберутся.',
+    'Daily':'Дейли','Free':'Свободно','Rush':'Раш','Custom':'Своя','Play':'Играть',
+    'How to play':'Как играть','Stats':'Статы','Statistics':'Статистика','Reset all statistics':'Сбросить всю статистику',
+    'Enter a board code':'Введите код доски','Not a valid code':'Не похоже на код',
+    'A code recreates a board exactly — same words, same shuffle, in any copy of the game. Get one from the pause or end screen, click it to copy, send it to anyone.':'Код воссоздаёт доску в точности — те же слова, та же тасовка, в любой копии игры. Возьмите его на паузе или финальном экране, кликните, чтобы скопировать, и шлите кому угодно.',
+    'The same board for everyone, once a day — always 5×5. No clock — your score is how few moves it took.':'Одна доска на всех, раз в день — всегда 5×5. Часов нет: счёт — это число ходов.',
+    'A fresh random board, as many as you like. Same rules as Daily, no streak.':'Свежая случайная доска, сколько угодно раз. Правила как в Дейли, но без серии.',
+    'A race, not a puzzle. The clock starts after your first word, each word buys more time, and every board is replaced the moment you solve it.':'Гонка, а не головоломка. Часы стартуют после первого слова, каждое слово докупает время, собранная доска тут же заменяется новой.',
+    'Your board, your rules. House games pay no points and set no bests — the code carries the rules, so a shared board plays the same for everyone.':'Ваша доска, ваши правила. Домашние игры не платят очков и не ставят рекордов, а код несёт правила — общая доска у всех одинакова.',
+    'Today’s board is done — <b>{0}</b>.':'Сегодняшняя доска пройдена — <b>{0}</b>.',
+    '{0} moves':n=>`${n} ${ruN(n,'ход','хода','ходов')}`,
+    'Streak <b>{0}</b> days.':n=>`Серия <b>${n}</b> ${ruN(n,'день','дня','дней')}.`,
+    'A new board arrives at midnight.':'Новая доска придёт в полночь по UTC.',
+    'Share today’s result':'Поделиться результатом',
+    'Streak <b>{0}</b> day — keep it going.':n=>`Серия <b>${n}</b> ${ruN(n,'день','дня','дней')} — не прерывайте.`,
+    'Streak <b>{0}</b> days — keep it going.':n=>`Серия <b>${n}</b> ${ruN(n,'день','дня','дней')} — не прерывайте.`,
+    'Play today’s board':'Играть доску дня',
+    'best <b>{0} moves</b>':n=>`рекорд <b>${n} ${ruN(n,'ход','хода','ходов')}</b>`,
+    '{0} words of {1} letters':(w,l)=>`${w} ${ruN(w,'слово','слова','слов')} × ${l} ${ruN(l,'буква','буквы','букв')}`,
+    '{0}m start':'старт {0} мин','{0}m limit':'лимит {0} мин','no hints':'без хинтов',
+    'tight clock':'скупые часы','rich clock':'щедрые часы',
+    'Mode':'Режим','Solve':'Сбор','Words':'Слова','Letters':'Буквы','Shown at start':'Открыто на старте',
+    'Start time':'Стартовое время','Time per word':'Время за слово','Tight':'Скупо','Normal':'Норма','Rich':'Щедро',
+    'Clues per word':'Подсказок за слово','Time limit':'Лимит времени','Hints':'Хинты','On':'Вкл','Off':'Выкл','60s':'60с','{0}m':'{0}м',
+    'Buzz on':'Вибро вкл','Buzz off':'Вибро выкл','Sound on':'Звук вкл','Sound off':'Звук выкл',
+    'Theme: auto':'Тема: авто','Theme: dark':'Тема: тёмная','Theme: light':'Тема: светлая',
+    'Moves':'Ходы','Found':'Найдено','Time':'Время','Score':'Счёт',
+    'Hint · {0}':'Хинт · {0}','{0} pts':'{0} очк.','Undo':'Отмена','Skip tutorial':'Пропустить обучение',
+    '<b>{0}</b> points to spend on hints and continues':'<b>{0}</b> очков на хинты и продолжения',
+    '1 letter of each word is showing.':'В каждом слове открыта одна буква.',
+    '{0} letters of each word are showing.':n=>`В каждом слове ${ruN(n,'открыта','открыты','открыто')} ${n} ${ruN(n,'буква','буквы','букв')}.`,
+    'Build something and watch what lights up.':'Соберите что-нибудь и смотрите, что подсветится.',
+    '<b>Endgame.</b> An empty row opened up — columns can park a letter in a socket, so you can reorder freely.':'<b>Эндшпиль.</b> Открылся пустой ряд — столбец может припарковать букву в гнездо, и последнее слово перебирается свободно.',
+    '<b>Duel.</b> Beat <b>{0} moves</b> on this exact board.':n=>`<b>Дуэль.</b> Соперник прошёл эту доску за <b>${n}</b> ${ruN(n,'ход','хода','ходов')} — сыграйте лучше.`,
+    '<b>Duel.</b> Beat <b>{0} words</b> on this exact board.':n=>`<b>Дуэль.</b> Соперник набрал <b>${n}</b> ${ruN(n,'слово','слова','слов')} — наберите больше.`,
+    'The clock starts once you land your first word.':'Часы запустятся после первого собранного слова.',
+    'Next word is worth {0}s.':'Следующее слово принесёт {0}с.',
+    'The clock starts on your first move.':'Часы пойдут с первого хода.',
+    'Tap a clue to aim a hint at that word, or use the button for whichever needs it most.':'Тапните подсказку-слово, чтобы открыть букву именно в нём, или жмите кнопку — она выберет самое закрытое.',
+    'Each word you find reveals a letter in the others.':'Каждое найденное слово открывает букву в остальных.',
+    'Each word you find reveals {0} letters in the others.':n=>`Каждое найденное слово открывает ${n} ${ruN(n,'букву','буквы','букв')} в остальных.`,
+    'No free letters — every word is on you.':'Никаких бесплатных букв — все слова на вас.',
+    'Each word you find reveals a letter in one of the others.':'Каждое найденное слово открывает букву в одном из остальных.',
+    'Each word you find reveals a letter in two of the others.':'Каждое найденное слово открывает буквы в двух из остальных.',
+    '<b style="color:var(--acc)">{0}</b> is a real word, but not one of the {1}.':(w,n)=>`<b style="color:var(--acc)">${w}</b> — настоящее слово, но не из ${n} загаданных.`,
+    '<b>+1 point</b>':'<b>+1 очко</b>',
+    '<b style="color:var(--hit)">{0}</b> banked.':w=>`<b style="color:var(--hit)">${w}</b> в банке.`,
+    'Solved':'Решено','Gave up':'Сдался',
+    'moves · {0}s':'ходов · {0}с',
+    '+{0} points':n=>`+${n} ${ruN(n,'очко','очка','очков')}`,
+    '{0} ruled out':'отсеяно {0}',
+    '{0} hint':n=>`${n} хинт`,'{0} hints':n=>`${n} ${ruN(n,'хинт','хинта','хинтов')}`,
+    'word':'слово','words':'слов','of {0} found':'из {0} найдено',
+    'New best.':'Новый рекорд.',
+    'Tap a word to see what it means.':'Тапните слово, чтобы узнать значение.',
+    'no definition for this one':'для этого слова определения нет',
+    'Daily board':'Доска дня','Custom board':'Своя доска',
+    'A challenge code — tap to copy. It carries your {0} moves: whoever enters it plays this board against that score.':n=>`Код-вызов — тап, чтобы скопировать. В нём ваш результат (${n} ${ruN(n,'ход','хода','ходов')}): кто введёт его, сыграет эту доску против вашего счёта.`,
+    'A challenge code — tap to copy. It carries your {0} words: whoever enters it plays this board against that score.':n=>`Код-вызов — тап, чтобы скопировать. В нём ваш результат (${n} ${ruN(n,'слово','слова','слов')}): кто введёт его, сыграет эту доску против вашего счёта.`,
+    'Share this deal':'Поделиться доской','Play again':'Сыграть ещё','Retry this board':'Переиграть эту доску','Menu':'Меню',
+    'Continue · {0} pts for {1}s':'Продолжить · {0} очков за {1}с',
+    'Duel won — you beat their {0} moves.':n=>`Дуэль выиграна — вы обошли их ${n} ${ruN(n,'ход','хода','ходов')}.`,
+    'Duel won — you beat their {0} words.':n=>`Дуэль выиграна — вы обошли их ${n} ${ruN(n,'слово','слова','слов')}.`,
+    'Duel lost — their {0} moves stand.':n=>`Дуэль проиграна — их результат (${n} ${ruN(n,'ход','хода','ходов')}) устоял.`,
+    'Duel lost — their {0} words stand.':n=>`Дуэль проиграна — их результат (${n} ${ruN(n,'слово','слова','слов')}) устоял.`,
+    'Dead heat — {0} moves apiece.':n=>`Ничья — ровно ${n} ${ruN(n,'ход','хода','ходов')} у обоих.`,
+    'Dead heat — {0} words apiece.':n=>`Ничья — ровно ${n} ${ruN(n,'слово','слова','слов')} у обоих.`,
+    'solved in {0} moves':n=>`решено за ${n} ${ruN(n,'ход','хода','ходов')}`,
+    '{0} words, {1} pts':(a,b)=>`${a} ${ruN(a,'слово','слова','слов')}, ${b} очк.`,
+    '{0}/{1} found':'{0}/{1} найдено','daily':'дейли',
+    'Challenge code: {0} — beat my {1} moves':(c,n)=>`Код-вызов: ${c} — побей мой результат: ${n} ${ruN(n,'ход','хода','ходов')}`,
+    'Challenge code: {0} — beat my {1} words':(c,n)=>`Код-вызов: ${c} — побей мой результат: ${n} ${ruN(n,'слово','слова','слов')}`,
+    'Code: {0}':'Код: {0}','Play: {0}':'Играть: {0}','try this board':'попробуй эту доску',
+    'Copied — send it to anyone':'Скопировано — шлите кому угодно','Copy this:':'Скопируйте:','Copy the code:':'Скопируйте код:','Copied':'Скопировано',
+    'Paused':'Пауза','The clock is stopped.':'Часы остановлены.','Take your time.':'Не спешите.',
+    'Quitting counts the board as played.':'Выход засчитает доску как сыгранную.',
+    'Click the code to copy it — entered in the menu, it rebuilds this exact board for anyone.':'Кликните код, чтобы скопировать: введённый в меню, он воссоздаст эту доску у кого угодно.',
+    'Resume':'Продолжить','Share this board':'Поделиться доской','Quit to menu':'Выйти в меню',
+    'Reveal a letter':'Открыть букву',
+    'Open one more letter in <b style="font-family:var(--mono);letter-spacing:.16em">{0}</b> for <b>{1}</b> points. You have {2}.':(m,c,p)=>`Открыть ещё одну букву в <b style="font-family:var(--mono);letter-spacing:.16em">${m}</b> за <b>${c}</b> очков. У вас ${p}.`,
+    'Reveal · {0} pts':'Открыть · {0} очк.','Not now':'Не сейчас',
+    'You’ve got it':'Разобрались',
+    'Rows and columns move whole lines. Green rows bank themselves. Everything else is reading the colors.':'Строки и столбцы двигают целые линии. Зелёная строка банкуется сама. Всё остальное — чтение цветов.',
+    'Play a real board':'Сыграть настоящую доску',
+    'Overall':'Всего','Points':'Очки','Games':'Игры','Hints used':'Хинтов','Ruled out':'Отсеяно',
+    'Played':'Сыграно','Win rate':'Побед','Avg moves':'Ср. ходов',
+    'Best 4×4':'Рекорд 4×4','Best 5×5':'Рекорд 5×5','Best 6×6':'Рекорд 6×6',
+    'Best time':'Лучшее время','Time played':'Времени в игре','Moves · {0}×{0}':'Ходы · {0}×{0}',
+    'Runs':'Заезды','Best run':'Лучший заезд','Words total':'Слов всего','Avg per run':'Ср. за заезд',
+    'Streak':'Серия','Best streak':'Лучшая серия','Duels':'Дуэли','Won':'Победы','Lost':'Поражения','Tied':'Ничьи',
+    'Collection':'Коллекция','Words found':'Слов найдено','Of dictionary':'Словаря открыто',
+    '{0}-day streak':n=>`серия ${n} ${ruN(n,'день','дня','дней')}`
+  },
+  rules:
+    '<h3>Суть</h3>'+
+    '<p>Доска 5×5 прячет пять слов по пять букв, перемешанных по сетке. Каждая плитка принадлежит одному из них — лишних нет и недостающих нет. Вы не ищете буквы, они все у вас. Работа в том, чтобы понять, какие это слова, и вернуть каждое в свою строку.</p>'+
+    '<h3>Ходы</h3>'+
+    '<p>Тяните строку вбок, столбец — вверх и вниз. Можно нажимать стрелки. Плитки, ушедшие за край, возвращаются с другой стороны. Линия двигается целиком — в этом вся сложность: ставя одно слово на место, вы растаскиваете остальные.</p>'+
+    '<h3>Чтение доски</h3>'+
+    '<ul>'+
+    '<li><i class="sw g"></i><span><b>Зелёная</b> строка — одно из спрятанных слов. Через мгновение она банкуется сама.</span></li>'+
+    '<li><i class="sw a"></i><span><b>Янтарная</b> — ровно те буквы, но не тот порядок. Переставляйте внутри строки, не разбирайте её.</span></li>'+
+    '<li><i class="sw r"></i><span><b>Красная</b> — настоящее слово, но не из спрятанных. Догадка неверна и стоит <b>1 очко</b> за отсев. Каждое слово платит один раз.</span></li>'+
+    '</ul>'+
+    '<p>Банкуются только спрятанные слова. Остальные настоящие слова — информация, а не прогресс.</p>'+
+    '<h3>Подсказки</h3>'+
+    '<p>У каждого спрятанного слова часть букв открыта, остальные — точки. Тапните подсказку с пунктирной рамкой, чтобы купить ещё одну букву за 30 очков. Две буквы всегда остаются закрытыми — подсказка никогда не выдаёт слово целиком.</p>'+
+    '<h3>Свободная</h3>'+
+    '<p>Часов нет — таймер только записывает время. Забанкованная строка уходит с доски, сетка сжимается. Найденное слово открывает букву в одном из оставшихся (на 6×6 — в двух). Когда остаётся одна строка, под ней открывается пустой ряд — столбцы могут парковать буквы, и последнее слово перебирается свободно. Любая доска решаема. Решение платит 10, 15 или 25 очков по размеру доски.</p>'+
+    '<h3>Раш</h3>'+
+    '<p>Открыты две буквы каждого слова, и больше не открываются. Часы стартуют после первого слова. Каждое слово докупает время, но выплата тает: 20с, 18с, 16с… до пола в 3с. Слово платит очко за букву. Забанкованная строка сразу заменяется — буквы нового слова прилетают вразброс по разным строкам. На нуле забег кончается; раз за забег можно купить 20 секунд за 100 очков.</p>'+
+    '<h3>Размер доски</h3>'+
+    '<p>Свободная и Раш бывают 4×4, 5×5 и 6×6. Чем длиннее слова, тем слабее подсказки — поэтому 6×6 выдаёт буквы вдвое быстрее и начинает с лишней открытой. Рекорды хранятся по размерам.</p>'+
+    '<h3>Дейли</h3>'+
+    '<p>Одна доска на всех, раз в день, всегда 5×5. Решили — серия растёт; пропустили день — обнулилась. Только тут сравнение ходов честное: все играют одну тасовку.</p>'+
+    '<h3>Своя</h3>'+
+    '<p>Ваши правила: сколько слов и какой длины, сколько букв открыто со старта, сколько открывает найденное слово, часы и хинты. Либо переключите режим в <b>Раш</b> и настройте гонку: стартовое время и щедрость выплат. Домашние игры не платят очков и не ставят рекордов. Код своей доски начинается с <b>C</b> и несёт правила вместе с тасовкой.</p>'+
+    '<h3>Код доски</h3>'+
+    '<p>Каждая доска — одно число, поэтому она помещается в короткий код вроде <b>PS9WXB</b>. Код и ссылка появляются в конце игры и на паузе. Введите чужой код в меню — и вы на той же доске: те же слова, та же тасовка. Ничего не загружается: доска строится из числа, так что код работает в любой копии игры. Русские коды начинаются с буквы <b>X</b>.</p>'+
+    '<h3>Дуэли</h3>'+
+    '<p>Законченная игра делится <b>кодом-вызовом</b>: он несёт ваш результат поверх доски. Кто введёт код — сыграет ту же доску против вашего счёта (меньше ходов, а в Раше больше слов), получит вердикт в конце и может тут же кинуть вызов в ответ. Раш честный: слова-замены приходят всем в одном порядке.</p>'+
+    '<button class="btn ghost" id="bTut" style="margin-top:20px">Пройти обучение</button>'
+};
 let uiLang='en';                 // interface language (user preference)
 let gameLang='en';               // the board's dictionary language (a foreign code sets it)
 let pendingLang=null;            // consumed by start(), like pendingCustom
-const T=s=>{const d=LANGS[uiLang]&&LANGS[uiLang].str; return (d&&d[s])||s;};
-const TF=(s,...a)=>T(s).replace(/\{(\d)\}/g,(m,i)=>a[+i]===undefined?m:a[+i]);
+/* str values may be plain strings with {0} placeholders, or functions of the
+   arguments — languages with real plural rules (Russian: ход/хода/ходов) use functions */
+const T=s=>{const d=LANGS[uiLang]&&LANGS[uiLang].str; const v=d?d[s]:undefined;
+  return (v==null||typeof v==='function')?s:v;};
+const TF=(s,...a)=>{const d=LANGS[uiLang]&&LANGS[uiLang].str; const v=d?d[s]:undefined;
+  if(typeof v==='function') return v(...a);
+  return (v==null?s:v).replace(/\{(\d)\}/g,(m,i)=>a[+i]===undefined?m:a[+i]);};
 
 /* per-language word banks, built once from each dict blob and cached */
 const bankFrom=blobs=>{const B={};
@@ -1100,7 +1241,8 @@ function showEnd(){
     `<h2>${title}</h2><div class="big ${cls}">${big}</div><p class="sub">${sub}</p>`+duel+
     (done==='win'&&career.best===mv?`<p class="sub" style="color:var(--hit)">`+T('New best.')+`</p>`:'')+
     (done==='timeup'&&found===career.hardBest&&found>0?`<p class="sub" style="color:var(--hit)">`+T('New best.')+`</p>`:'')+
-    (words?`<div class="found">${words}</div><p class="defout" id="defOut">`+T('Tap a word to see what it means.')+`</p>`:'')+
+    (words?`<div class="found">${words}</div>`+(Object.keys(GLOSS).length
+      ?`<p class="defout" id="defOut">`+T('Tap a word to see what it means.')+`</p>`:''):'')+
     `<p class="sub" style="margin-top:14px">`+
       `${isDaily?T('Daily board')+' · ':custom?T('Custom board')+' · ':''}${codeChip(ch)}`+
       (mv?`<br><span style="font-family:var(--mono);font-size:.72rem;letter-spacing:.1em">${dirSig()}</span>`:'')+`</p>`+
@@ -1113,6 +1255,7 @@ function showEnd(){
     `<button class="btn${canCont?' ghost':' primary'}" id="bAgain">`+T(challenge?'Retry this board':'Play again')+`</button>`+
     `<button class="btn ghost" id="bMenu">`+T('Menu')+`</button>`;
   el('card').querySelectorAll('.found span').forEach(sp=>sp.onclick=()=>{
+    if(!el('defOut')) return;
     const w=sp.dataset.w, d=defOf(w);
     el('defOut').innerHTML=`<b>${w.toUpperCase()}</b> — ${d?esc(d):T('no definition for this one')}`;
   });
@@ -1398,7 +1541,9 @@ function shareDaily(){
    iframe, so typing the code is the way in. */
 async function playCode(raw,pfx){
   pfx=pfx||'';
-  raw=(raw||'').toUpperCase().replace(/[^0-9A-Z]/g,'');
+  raw=(raw||'').toUpperCase()
+    .replace(/[АВЕКМНОРСТУХ]/g,m=>('ABEKMHOPCTYX'['АВЕКМНОРСТУХ'.indexOf(m)]))  // cyrillic lookalikes
+    .replace(/[^0-9A-Z]/g,'');
   /* language envelope: one letter outside the whole code (English carries none).
      Strip it, load that dictionary, and parse the rest as usual; pfx keeps the
      stripped letter so challenge codes stay whole for retries. */
