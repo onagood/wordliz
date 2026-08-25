@@ -167,13 +167,21 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
 .actbar .tool[hidden]{display:none}
 .actbar span{font-family:var(--mono);font-size:.78rem;color:var(--ink-soft);margin-left:auto}
 .hint{margin:10px 0 0;font-size:.8rem;color:var(--ink-soft);text-align:center;min-height:2.6em}
+/* word cards float over the page so they never change layout height (no scroll jumps) */
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));box-sizing:border-box;
+  width:min(92vw,412px);background:var(--ground-2);border:1px solid var(--frame);border-radius:12px;
+  padding:10px 14px;font-size:.8rem;line-height:1.45;color:var(--ink-soft);text-align:center;
+  box-shadow:0 10px 30px rgba(0,0,0,.2);opacity:0;pointer-events:none;z-index:8;
+  transform:translate(-50%,10px);transition:opacity .22s,transform .22s}
+#toast.on{opacity:1;transform:translate(-50%,0)}
 
-#tutCue{position:absolute;z-index:4;pointer-events:none;font-size:1.7rem;font-weight:900;color:var(--acc);
+#tutCue{--d:1;position:absolute;z-index:4;pointer-events:none;font-size:1.7rem;font-weight:900;color:var(--acc);
   text-shadow:0 2px 8px rgba(0,0,0,.25);transform:translate(-50%,-50%)}
 #tutCue.h{animation:cueH 1s ease-in-out infinite}
 #tutCue.v{animation:cueV 1s ease-in-out infinite}
-@keyframes cueH{0%,100%{margin-left:-12px}50%{margin-left:12px}}
-@keyframes cueV{0%,100%{margin-top:-12px}50%{margin-top:12px}}
+/* --d is the move direction (1 or -1), so the glide always matches where the arrow points */
+@keyframes cueH{0%,100%{margin-left:calc(-12px*var(--d))}50%{margin-left:calc(12px*var(--d))}}
+@keyframes cueV{0%,100%{margin-top:calc(-12px*var(--d))}50%{margin-top:calc(12px*var(--d))}}
 @media(prefers-reduced-motion:reduce){#tutCue{animation:none!important}}
 /* ---------- overlay ---------- */
 .confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none}
@@ -195,7 +203,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
   background:var(--ground-2);border-radius:4px;color:var(--ink-soft);cursor:pointer}
 .found span:hover{color:var(--ink)}
 .found span.red{background:var(--red-wash);border:1px dashed var(--acc);color:var(--acc);padding:2px 6px}
-.defout{color:var(--ink-soft);font-size:.8rem;margin:10px 0 0;min-height:1.3em}
+.defout{color:var(--ink-soft);font-size:.8rem;margin:10px 0 0;min-height:3em}
 .defout b{color:var(--ink);font-family:var(--mono);font-size:.74rem;letter-spacing:.12em}
 .gloss{font-style:italic}
 .card .btn:first-of-type{margin-top:20px}
@@ -308,6 +316,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
     <div class="actbar">
       <button class="tool" id="bUndo">Undo</button>
       <button class="tool" id="bHint">Hint</button>
+      <button class="tool" id="bSkip" hidden>Skip tutorial</button>
       <span id="ptsNow">0 pts</span>
     </div>
     <p class="hint" id="hint"></p>
@@ -316,6 +325,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
 
 <!-- ===== OVERLAY ===== -->
 <div class="veil" id="veil"><div class="card" id="card"></div></div>
+<div id="toast" role="status"></div>
 
 <script src="words_en.js"></script>
 <script src="gloss_en.js"></script>
@@ -493,7 +503,7 @@ function deal(s){
   } while(++guard<6 && idx(N).some(r=>rowState(r)>=2));
   mv=0; found=0; score=0; done=null; usedContinue=false; bankedScore=0; hintsUsed=0; undoState=null;
   dirs={L:0,R:0,U:0,D:0};
-  stopClock(); timeLeft=60; t0=0; tAcc=0; reds=0; foundReal.clear(); flash=null;
+  stopClock(); timeLeft=60; t0=0; tAcc=0; reds=0; foundReal.clear(); hideFlash();
   build(); refresh();
 }
 function rawRow(r,d){const a=grid[r],n=a.length,o=new Array(n);for(let i=0;i<n;i++)o[(i+d+n)%n]=a[i];grid[r]=o;}
@@ -560,21 +570,20 @@ function replaceRow(r){
   }
   grid[r][cols[N-1]]=fresh[N-1];
 }
-/* the word that just turned up, red or banked, shown under the board with its meaning */
-let flash=null;
+/* the word that just turned up, red or banked, shown as a floating card
+   (position:fixed, out of the page flow, so it never resizes or scrolls the page) */
 function setFlash(kind,w){
-  const f={kind,w:w.toUpperCase(),def:defOf(w)};
-  flash=f;
+  const def=defOf(w), W=w.toUpperCase();
+  const g=def?`<br><i class="gloss">${esc(def)}</i>`:'';
+  const t=el('toast');
+  t.innerHTML = kind==='red'
+    ? `<b style="color:var(--acc)">${W}</b> is a real word, but not one of the ${N}. <b>+1 point</b>`+g
+    : `<b style="color:var(--hit)">${W}</b> banked.`+g;
+  t.classList.add('on');
   clearTimeout(setFlash.t);
-  setFlash.t=setTimeout(()=>{if(flash===f){flash=null;refresh();}},f.def?5000:2000);
-  refresh();
+  setFlash.t=setTimeout(()=>t.classList.remove('on'),def?5000:2000);
 }
-function flashHtml(){
-  const g=flash.def?`<br><i class="gloss">${esc(flash.def)}</i>`:'';
-  return flash.kind==='red'
-    ? `<b style="color:var(--acc)">${flash.w}</b> is a real word, but not one of the ${N}. <b>+1 point</b>`+g
-    : `<b style="color:var(--hit)">${flash.w}</b> banked.`+g;
-}
+function hideFlash(){clearTimeout(setFlash.t);el('toast').classList.remove('on');}
 /* each new real-but-wrong word pays a point — once per game */
 function scanReds(){
   if(tut) return;
@@ -746,11 +755,14 @@ function refresh(){
   el('l3').textContent=hard?'Score':'Time';
   el('d3').textContent=hard?score:Math.floor(elapsed())+'s';
   const ub=el('bUndo'); ub.disabled = !undoState || !!done || paused || !!tut;
+  ub.hidden = !!tut;
   const hb=el('bHint');
   hb.hidden = mode!=='free';
   if(tut) hb.hidden=true;
   hb.disabled = done||paused||career.points<HINT_COST;
   hb.textContent = `Hint · ${HINT_COST}`;
+  el('bSkip').hidden = !tut;
+  el('ptsNow').hidden = !!tut;
   el('ptsNow').textContent = `${career.points} pts`;
   const canHint = !done && !paused && mode==='free' && career.points>=HINT_COST;
   const list=targets.filter(t=>!hard||!t.done);
@@ -764,7 +776,6 @@ function refresh(){
   else if(endgame) h.innerHTML='<b>Endgame.</b> An empty row opened up — columns can park a letter in a socket, so you can reorder freely.';
   else if(hard&&found===0) h.textContent='Two letters of each word are showing. The clock starts once you land your first word.';
   else if(hard) h.textContent=`Next word is worth ${rushBonus(found+1)}s.`;
-  else if(flash) h.innerHTML=flashHtml();
   else if(found===0) h.textContent='One letter of each word is showing. Build something and watch what lights up.';
   else if(mode==='free'&&career.points>=HINT_COST) h.textContent='Tap a clue to aim a hint at that word, or use the button for whichever needs it most.';
   else h.textContent=`Each word you find reveals a letter in ${N>=6?'two of':'one of'} the others.`;
@@ -791,6 +802,7 @@ function tutStep(){
   if(!c){ c=document.createElement('div'); c.id='tutCue'; }
   boardEl.appendChild(c);
   c.className = e.t==='r' ? 'h' : 'v';
+  c.style.setProperty('--d',e.d);
   c.textContent = e.t==='r' ? (e.d===1?'\u2192':'\u2190') : (e.d===1?'\u2193':'\u2191');
   if(e.t==='r'){ c.style.left=(N*step/2)+'px'; c.style.top=(e.i*step+step/2)+'px'; }
   else{ c.style.left=(e.i*step+step/2)+'px'; c.style.top=(grid.length*step/2)+'px'; }
@@ -827,14 +839,20 @@ function startTutorial(){
   grid.push([...'ordw'].map(mkTile));
   mv=0; found=0; score=0; done=null; usedContinue=false; bankedScore=0; hintsUsed=0; undoState=null;
   dirs={L:0,R:0,U:0,D:0};
-  stopClock(); timeLeft=60; t0=0; tAcc=0; reds=0; foundReal.clear(); flash=null;
+  stopClock(); timeLeft=60; t0=0; tAcc=0; reds=0; foundReal.clear(); hideFlash();
   tut={step:1};
   build(); refresh();
   requestAnimationFrame(()=>{layout(); tutStep();});
 }
 el('bTut').onclick=()=>startTutorial();
+function skipTutorial(){
+  tut=null; career.tutorialDone=true; save();
+  const tc=document.getElementById('tutCue'); if(tc)tc.remove();
+  toMenu();
+}
+el('bSkip').onclick=()=>{ if(tut) skipTutorial(); };
 /* ---------- screens ---------- */
-function show(id){['scMenu','scGame','scRules','scStats'].forEach(s=>el(s).classList.toggle('on',s===id));}
+function show(id){['scMenu','scGame','scRules','scStats'].forEach(s=>el(s).classList.toggle('on',s===id));hideFlash();}
 function histHtml(){
   const H=career.hist||{}; let out='';
   for(const n of [4,5,6]){
@@ -1122,8 +1140,7 @@ el('bHint').onclick=()=>{
   askHint(pool[0]);
 };
 el('bBack').onclick=()=>{
-  if(tut){ tut=null; career.tutorialDone=true; save();
-    const tc=document.getElementById('tutCue'); if(tc)tc.remove(); toMenu(); return; }
+  if(tut){ skipTutorial(); return; }
   if(done){ show('scMenu'); refresh(); return; }
   const wasRunning=!!clock; stopClock(); paused=true;
   el('card').innerHTML=`<h2>Leave this board?</h2>`+

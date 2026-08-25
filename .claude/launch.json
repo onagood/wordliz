@@ -4,8 +4,8 @@
     {
       "name": "wordliz",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["-y", "serve", "-l", "8741", "."],
-      "port": 8741
+      "runtimeArgs": ["http-server", ".", "-p", "8123", "-c-1", "--silent"],
+      "port": 8123
     }
   ]
 }
