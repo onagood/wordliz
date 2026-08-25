@@ -314,7 +314,6 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
   <!-- ===== GAME ===== -->
   <section class="screen" id="scGame">
     <div class="bar">
-      <button class="icon" id="bBack" aria-label="Back to menu">←</button>
       <button class="icon" id="bPause" aria-label="Pause">❚❚</button>
       <dl class="stats" style="margin:0">
         <div class="st"><dt id="l1">Moves</dt><dd id="d1">0</dd></div>
@@ -1069,21 +1068,22 @@ function showPause(){
   if(done) return;
   paused=true; stopClock();
   el('card').innerHTML=`<h2>Paused</h2><p class="sub" style="margin-top:8px">`+
-    ((mode==='hard'||(custom&&custom.t))?'The clock is stopped.':'Take your time.')+`</p>`+
+    ((mode==='hard'||(custom&&custom.t))?'The clock is stopped.':'Take your time.')+
+    (tut?'':' Quitting counts the board as played.')+`</p>`+
     (tut?'':`<p class="sub" style="margin-top:8px;font-family:var(--mono);font-size:.72rem;letter-spacing:.1em">`+
       `${isDaily?'DAILY · ':custom?'CUSTOM · ':''}DEAL ${dealCode()}</p>`)+
     `<button class="btn primary" id="bResume">Resume</button>`+
     (tut?'':`<button class="btn ghost" id="pShare">Share this board</button>`)+
-    `<button class="btn ghost" id="bQuit">Quit to menu</button>`;
+    `<button class="btn ghost" id="bQuit">${tut?'Skip tutorial':'Quit to menu'}</button>`;
   if(!tut) el('pShare').onclick=()=>shareText(
     `Wordliz — try this board\nCode: ${dealCode()}`+
     `\nPlay: ${EMBEDDED?ITCH_URL:location.origin+location.pathname}`, el('pShare'));
   el('bResume').onclick=()=>{
     paused=false; el('veil').classList.remove('on');
-    if(mode==='hard'&&found>0) startClock();
+    if((mode==='hard'&&found>0)||(custom&&custom.t&&mv>0)) startClock();
     sweep();
   };
-  el('bQuit').onclick=toMenu;
+  el('bQuit').onclick=()=>{ paused=false; if(tut){skipTutorial();return;} toMenu(); };
   el('veil').classList.add('on');
 }
 function paintHap(){
@@ -1257,18 +1257,6 @@ el('bHint').onclick=()=>{
   if(!pool.length) return;
   pool.sort((a,b)=>a.shown.length-b.shown.length);
   askHint(pool[0]);
-};
-el('bBack').onclick=()=>{
-  if(tut){ skipTutorial(); return; }
-  if(done){ show('scMenu'); refresh(); return; }
-  const wasRunning=!!clock; stopClock(); paused=true;
-  el('card').innerHTML=`<h2>Leave this board?</h2>`+
-    `<p class="sub" style="margin-top:8px">This game will count as played and the board is lost.</p>`+
-    `<button class="btn primary" id="lYes">Leave</button>`+
-    `<button class="btn ghost" id="lNo">Keep playing</button>`;
-  el('lYes').onclick=()=>{ paused=false; toMenu(); };
-  el('lNo').onclick=()=>{ paused=false; el('veil').classList.remove('on'); if(wasRunning) startClock(); };
-  el('veil').classList.add('on');
 };
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden && !done && !paused && el('scGame').classList.contains('on')) showPause();
