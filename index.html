@@ -388,35 +388,40 @@ const Sfx=(()=>{
     if(ctx&&ctx.state==='suspended') ctx.resume().catch(()=>{});
     return ctx;
   };
-  function note(f,t,dur,vol,type){
-    const c=ctx; if(!c) return;
-    const o=c.createOscillator(), g=c.createGain();
-    o.type=type||'triangle'; o.frequency.value=f;
-    g.gain.setValueAtTime(0.0001,t);
-    g.gain.exponentialRampToValueAtTime(vol,t+0.008);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    o.connect(g); g.connect(c.destination);
-    o.start(t); o.stop(t+dur+0.02);
+  /* music-box tine: sine fundamental + bright partials, instant pluck, long ring */
+  function bell(dest,f,t,dur,vol){
+    const c=dest.context;
+    [[1,1,1],[4,0.18,0.5],[6.7,0.07,0.3]].forEach(([m,a,dr])=>{
+      const o=c.createOscillator(), g=c.createGain(), d=Math.max(0.06,dur*dr);
+      o.type='sine'; o.frequency.value=f*m;
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(vol*a,t+0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+      o.connect(g); g.connect(dest);
+      o.start(t); o.stop(t+d+0.05);
+    });
   }
   return {
     get on(){return on;}, set on(v){on=!!v;},
     unlock(){ac();},
-    tick(){                                   // click per shift
+    tick(){                                   // soft tine plink per shift
       if(!on) return;
       const t=performance.now(); if(t-last<40) return; last=t;
       const c=ac(); if(!c) return;
-      note(1250,c.currentTime,0.035,0.06);
+      bell(c.destination,1318.51,c.currentTime,0.1,0.05);
     },
-    hit(){                                    // word banked / letter revealed
+    hit(){                                    // word banked: tiny mobile arpeggio
       if(!on) return; const c=ac(); if(!c) return;
       const t=c.currentTime;
-      note(659.25,t,0.14,0.12); note(987.77,t+0.09,0.22,0.12);
+      bell(c.destination,659.25,t,0.9,0.1);
+      bell(c.destination,783.99,t+0.09,0.9,0.09);
+      bell(c.destination,987.77,t+0.18,1.2,0.1);
     },
-    over(win){                                // game over
+    over(win){                                // game over: wind-up toy phrase
       if(!on) return; const c=ac(); if(!c) return;
       const t=c.currentTime;
-      if(win) [523.25,659.25,783.99,1046.5].forEach((f,i)=>note(f,t+i*0.09,0.3,0.11));
-      else [392,311.13,246.94].forEach((f,i)=>note(f,t+i*0.12,0.28,0.1,'sine'));
+      if(win) [523.25,659.25,783.99,1046.5,1318.51].forEach((f,i)=>bell(c.destination,f,t+i*0.14,1.6,0.09));
+      else [659.25,587.33,523.25].forEach((f,i)=>bell(c.destination,f,t+i*0.34,1.8,0.07));
     }
   };
 })();
