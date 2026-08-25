@@ -307,6 +307,9 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
 
       <h3>Sharing a board</h3>
       <p>Every board is generated from a single number, so it fits in a short code like <b>PS9WXB</b> (4×4 and 6×6 boards carry a leading <b>4</b> or <b>6</b>, custom boards start with <b>C</b>). The code and a link appear when a game ends. Open somebody's link — or type their code into the box on the menu — and you land on their exact board: same words, same shuffle, same clues. Nothing is uploaded; the board is rebuilt from the number, so a code works in any copy of the game.</p>
+
+      <h3>Duels</h3>
+      <p>A finished game shares as a <b>challenge code</b> that carries your result on top of the board: <b>B</b>-codes challenge your move count, <b>R</b>-codes replay a Rush run against your word count — Rush deals its replacement words in the same order for everyone, so the race is fair. Whoever enters the code plays the same board with your score to beat, gets a verdict at the end, and can fire their own challenge straight back.</p>
       <button class="btn ghost" id="bTut" style="margin-top:20px">Play the tutorial</button>
     </div>
   </section>
@@ -471,6 +474,9 @@ let CAP=3, mode='free';
     t:time limit in seconds (0 = none), h:hints allowed (1/0)} */
 const CUST_TIMES=[0,60,120,180,300];
 let custom=null, pendingCustom=null;
+/* async duel: a challenge code carries the sender's result on top of a board code —
+   {metric:'moves'|'words', target:number, full:the challenge code for retries} */
+let challenge=null, pendingChallenge=null;
 /* deterministic deal: one seed — the same board for everyone */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;
   let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;
@@ -823,6 +829,7 @@ function refresh(){
   const h=el('hint');
   if(tut) h.innerHTML=tutMsg();
   else if(endgame) h.innerHTML='<b>Endgame.</b> An empty row opened up — columns can park a letter in a socket, so you can reorder freely.';
+  else if(challenge) h.innerHTML=`<b>Duel.</b> Beat <b>${challenge.target} ${challenge.metric}</b> on this exact board.`;
   else if(hard&&found===0) h.textContent='Two letters of each word are showing. The clock starts once you land your first word.';
   else if(hard) h.textContent=`Next word is worth ${rushBonus(found+1)}s.`;
   else if(custom&&found===0) h.textContent=`${custom.s} letter${custom.s>1?'s':''} of each word ${custom.s>1?'are':'is'} showing.`+(custom.t?' The clock starts on your first move.':'');
@@ -879,7 +886,7 @@ function tutFinish(){
   el('veil').classList.add('on');
 }
 function startTutorial(){
-  tut=null; custom=null; pendingCustom=null;
+  tut=null; custom=null; pendingCustom=null; challenge=null; pendingChallenge=null;
   N=4; CAP=2; mode='free'; isDaily=false;
   show('scGame'); el('veil').classList.remove('on');
   tiles.clear(); nextId=0; boardEl.innerHTML='';
@@ -970,6 +977,7 @@ let isDaily=false;
 function start(m,s,daily,size){
   tut=null; const tc=document.getElementById('tutCue'); if(tc)tc.remove();
   custom=pendingCustom; pendingCustom=null;
+  challenge=pendingChallenge; pendingChallenge=null;
   N = custom ? custom.l : (daily ? 5 : (size||size===0 ? size : N));
   mode=m; isDaily=!!daily; show('scGame'); el('veil').classList.remove('on');
   deal(s); requestAnimationFrame(layout);
@@ -992,8 +1000,18 @@ function showEnd(){
     sub=custom?`of ${targets.length} found`+hintTail
       :`word${found===1?'':'s'} · +${score} points`+hintTail;}
   else {title='Gave up';big=found;cls='bad';sub=`of ${targets.length} found`;}
+  let duel='';
+  if(challenge){
+    const t=challenge.target, u=challenge.metric;
+    const mine = challenge.metric==='moves' ? (done==='win'?mv:null) : found;
+    if(mine===null)      duel=`<p class="sub" style="color:var(--acc)">Duel lost — their ${t} ${u} stand.</p>`;
+    else if(challenge.metric==='moves' ? mine<t : mine>t)
+                         duel=`<p class="sub" style="color:var(--hit)">Duel won — you beat their ${t} ${u}.</p>`;
+    else if(mine===t)    duel=`<p class="sub">Dead heat — ${t} ${u} apiece.</p>`;
+    else                 duel=`<p class="sub" style="color:var(--acc)">Duel lost — their ${t} ${u} stand.</p>`;
+  }
   el('card').innerHTML=
-    `<h2>${title}</h2><div class="big ${cls}">${big}</div><p class="sub">${sub}</p>`+
+    `<h2>${title}</h2><div class="big ${cls}">${big}</div><p class="sub">${sub}</p>`+duel+
     (done==='win'&&career.best===mv?'<p class="sub" style="color:var(--hit)">New best.</p>':'')+
     (done==='timeup'&&found===career.hardBest&&found>0?'<p class="sub" style="color:var(--hit)">New best.</p>':'')+
     (words?`<div class="found">${words}</div><p class="defout" id="defOut">Tap a word to see what it means.</p>`:'')+
@@ -1002,7 +1020,7 @@ function showEnd(){
       (mv?`<br><span style="font-family:var(--mono);font-size:.72rem;letter-spacing:.1em">${dirSig()}</span>`:'')+`</p>`+
     `<button class="btn ghost" id="bShare">Share this deal</button>`+
     (canCont?`<button class="btn primary" id="bCont">Continue · ${CONT_COST} pts for ${CONT_TIME}s</button>`:'')+
-    `<button class="btn${canCont?' ghost':' primary'}" id="bAgain">Play again</button>`+
+    `<button class="btn${canCont?' ghost':' primary'}" id="bAgain">${challenge?'Retry this board':'Play again'}</button>`+
     `<button class="btn ghost" id="bMenu">Menu</button>`;
   el('card').querySelectorAll('.found span').forEach(sp=>sp.onclick=()=>{
     const w=sp.dataset.w, d=defOf(w);
@@ -1018,11 +1036,15 @@ function showEnd(){
     const line = (done==='win' ? `solved in ${mv} moves`
       : (mode==='hard' ? `${found} words, ${score} pts` : `${found}/${targets.length} found`))
       + (hintsUsed?` (${hintsUsed} hint${hintsUsed>1?'s':''})`:'');
+    const b36=n=>n.toString(36).toUpperCase().padStart(2,'0');
+    const ch = (done==='win'&&mode!=='hard'&&mv>0&&mv<1296) ? 'B'+b36(mv)+dealCode()
+      : (mode==='hard'&&found>0&&found<1296) ? 'R'+b36(found)+dealCode() : null;
     shareText(`Wordliz — ${isDaily?'daily — ':''}${line}`+(mv?`\n${dirSig()}`:'')
-      +`\nCode: ${dealCode()}`
+      +(ch?`\nChallenge code: ${ch} — beat my ${mode==='hard'?found+' words':mv+' moves'}`
+          :`\nCode: ${dealCode()}`)
       +`\nPlay: ${EMBEDDED?ITCH_URL:location.origin+location.pathname}`, el('bShare'));
   };
-  el('bAgain').onclick=()=>custom?startCustom(custom):start(mode);
+  el('bAgain').onclick=()=>challenge?playCode(challenge.full):(custom?startCustom(custom):start(mode));
   el('bMenu').onclick=()=>{el('veil').classList.remove('on');show('scMenu');refresh();};
   el('veil').classList.add('on');
   if(done==='win') confetti();
@@ -1251,6 +1273,25 @@ function shareDaily(){
    iframe, so typing the code is the way in. */
 function playCode(raw){
   raw=(raw||'').toUpperCase().replace(/[^0-9A-Z]/g,'');
+  /* challenge codes: B<mv:2×base36><board code> beats moves, R<words:2×base36><plain code>
+     replays the run in Rush. Lengths 9/10/16 never collide with plain (6/7) or C (13) codes. */
+  if((raw[0]==='B'||raw[0]==='R')&&[9,10,16].includes(raw.length)){
+    const target=parseInt(raw.slice(1,3),36), rest=raw.slice(3);
+    if(!Number.isFinite(target)||target<1) return false;
+    if(raw[0]==='B'){
+      pendingChallenge={metric:'moves',target,full:raw};
+      if(playCode(rest)) return true;
+      pendingChallenge=null; return false;
+    }
+    let sz=5, code=rest;
+    if(rest.length===7&&(rest[0]==='4'||rest[0]==='6')){sz=+rest[0];code=rest.slice(1);}
+    const v=seedOfCode(code);
+    if(code.length<=6&&isFinite(v)){
+      pendingChallenge={metric:'words',target,full:raw};
+      start('hard',v,false,sz); return true;
+    }
+    return false;
+  }
   if(raw[0]==='C'&&raw.length===13){
     const d=raw.slice(1,7), v=seedOfCode(raw.slice(7));
     const cfg={l:+d[0],r:+d[1],s:+d[2],k:+d[3],t:CUST_TIMES[+d[4]],h:+d[5]};

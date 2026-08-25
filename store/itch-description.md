@@ -33,6 +33,11 @@ screen, send it to a friend, and typed into the menu it rebuilds your exact
 shuffle: same words, same scramble, in any copy of the game. Custom codes
 start with `C` and carry your rules along with the board.
 
+Finish a game and your share becomes a **challenge code**: whoever enters it
+plays your exact board with your score to beat — fewest moves, or most words
+in Rush — gets a verdict at the end, and can fire a challenge straight back.
+Duels with anyone, through any messenger, no accounts.
+
 No accounts, no downloads, works on phones. Free.
 
 ---
