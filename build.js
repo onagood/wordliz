@@ -20,10 +20,13 @@ const clean=d=>{fs.rmSync(d,{recursive:true,force:true});fs.mkdirSync(d,{recursi
 
 clean(DIST);
 
-// --- dist/web: files as-is (PWA files ride along; itch ignores them harmlessly) ---
+// --- dist/web: files as-is (PWA files ride along; itch ignores them harmlessly).
+//     Every words_*.js / gloss_*.js is picked up automatically — adding a language
+//     needs no build changes. ---
+const LANG_FILES=fs.readdirSync(ROOT).filter(f=>/^(words|gloss)_[a-z]+\.js$/.test(f));
 const WEB=path.join(DIST,'web');
 fs.mkdirSync(WEB,{recursive:true});
-for(const f of ['index.html',DICT,GLOSS,'manifest.webmanifest','sw.js','icon-192.png','icon-512.png'])
+for(const f of ['index.html','manifest.webmanifest','sw.js','icon-192.png','icon-512.png',...LANG_FILES])
   fs.copyFileSync(path.join(ROOT,f),path.join(WEB,f));
 
 // --- dist/wordliz-itch.zip: same files, index.html at archive root ---
