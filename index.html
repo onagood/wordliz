@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Wordliz</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#D8DCD6">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#161C1B">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -249,7 +253,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
       <button class="btn primary" id="goPlay" style="margin-top:12px">Play</button>
       <p class="blurb" id="blurb"></p>
       <div class="codebox">
-        <input id="codeIn" placeholder="Enter a board code" maxlength="16"
+        <input id="codeIn" placeholder="Enter a board code" maxlength="18"
           autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"
           aria-label="Board code">
         <button class="btn ghost" id="codeGo" style="width:auto;flex:0 0 auto;padding:12px 20px">Play</button>
@@ -303,7 +307,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
       <p>One board for everyone, once a day, always 5×5. Solve it and your streak grows; skip a day and it resets. This is the only board where comparing move counts is fair, since everybody plays the same shuffle.</p>
 
       <h3>Custom</h3>
-      <p>Your board, your rules: pick how many words and how long, how many letters show from the start, how many a found word unlocks, an optional clock, and whether hints are allowed. House games pay no points and set no bests. A custom board's code starts with <b>C</b> and carries the rules along with the shuffle, so a shared link plays exactly the same for everyone.</p>
+      <p>Your board, your rules: pick how many words and how long, how many letters show from the start, how many a found word unlocks, an optional clock, and whether hints are allowed. Or flip the mode to <b>Rush</b> and tune the endless race instead — starting time, and how generous each word's time payout is. House games pay no points and set no bests. A custom board's code starts with <b>C</b> and carries the rules along with the shuffle, so a shared link plays exactly the same for everyone.</p>
 
       <h3>Sharing a board</h3>
       <p>Every board is generated from a single number, so it fits in a short code like <b>PS9WXB</b> (4×4 and 6×6 boards carry a leading <b>4</b> or <b>6</b>, custom boards start with <b>C</b>). The code and a link appear when a game ends. Open somebody's link — or type their code into the box on the menu — and you land on their exact board: same words, same shuffle, same clues. Nothing is uploaded; the board is rebuilt from the number, so a code works in any copy of the game.</p>
@@ -485,7 +489,8 @@ let rnd=Math.random, seed=0;
 const SEED_MAX=2176782336;            // 36^6 — exactly what fits in a six-char code
 const codeOf=x=>(x%SEED_MAX).toString(36).toUpperCase().padStart(6,'0');
 const dealCode=()=> custom
-  ? 'C'+custom.l+custom.r+custom.s+custom.k+CUST_TIMES.indexOf(custom.t)+custom.h+codeOf(seed)
+  ? 'C'+custom.l+custom.r+custom.s+custom.k+CUST_TIMES.indexOf(custom.t)+custom.h
+    +(custom.m||0)+(custom.b===undefined?1:custom.b)+codeOf(seed)
   : (N===5?'':N)+codeOf(seed);
 const seedOfCode=c=>{const v=parseInt(c,36);return Number.isFinite(v)?v%SEED_MAX:NaN;};
 /* itch.io runs the game in a CDN iframe: deep links can't reach it and the frame URL
@@ -515,7 +520,8 @@ const career={deals:0, wins:0, best:null, hardBest:0, points:30, haptics:true, s
 const mkTile=l=>{const id=nextId++;tiles.set(id,{letter:l,el:null});return id;};
 const lettersLeft=()=>grid.reduce((n,r)=>n+r.filter(x=>x!==null).length,0);
 const bonus=n=> n<=6 ? 22-2*n : Math.max(3,16-n);
-const rushBonus=n=> Math.max(3,Math.round(bonus(n)*(N===4?0.8:N===6?1.4:1)));
+const rushBonus=n=> Math.max(3,Math.round(bonus(n)*(N===4?0.8:N===6?1.4:1)
+  *(custom&&mode==='hard'?[0.5,1,1.5][custom.b===undefined?1:custom.b]:1)));
 function revealOne(t){
   const free=idx(N).filter(i=>!t.shown.includes(i));
   if(free.length) t.shown.push(free[(rnd()*free.length)|0]);
@@ -606,13 +612,15 @@ function sweep(){
 function replaceRow(r){
   const used=new Set(targets.map(t=>t.w));
   let w; do{w=SEED[(rnd()*SEED.length)|0];}while(used.has(w));
-  const nt={w, shown:[], fresh:[], done:false}; revealOne(nt); revealOne(nt);
+  const nt={w, shown:[], fresh:[], done:false};
+  const reveals=custom?custom.s:2;
+  for(let i=0;i<reveals;i++) revealOne(nt);
   targets.push(nt);
   const fresh=[...w].sort(()=>rnd()-0.5).map(mkTile);
   const cols=idx(N).sort(()=>rnd()-0.5);
-  const others=idx(N).filter(i=>i!==r).sort(()=>rnd()-0.5);
+  const others=idx(grid.length).filter(i=>i!==r).sort(()=>rnd()-0.5);
   for(let i=0;i<N-1;i++){
-    const rr=others[i], cc=(rnd()*N)|0;
+    const rr=others[i%others.length], cc=(rnd()*N)|0;
     grid[r][cols[i]]=grid[rr][cc];
     grid[rr][cc]=fresh[i];
   }
@@ -691,6 +699,13 @@ function finish(win){
   const set=new Set(career.collected||[]); got.forEach(w=>set.add(w));
   career.collected=[...set];
   career.redsTotal=(career.redsTotal||0)+reds;
+  if(challenge){
+    const mine=challenge.metric==='moves'?(win?mv:null):found;
+    if(mine!==null&&(challenge.metric==='moves'?mine<challenge.target:mine>challenge.target))
+      career.duelsWon=(career.duelsWon||0)+1;
+    else if(mine===challenge.target) career.duelsTied=(career.duelsTied||0)+1;
+    else career.duelsLost=(career.duelsLost||0)+1;
+  }
   if(custom){ save(); refresh(); showEnd(); return; }   // house rules: no points, no bests
   if(mode==='hard'){
     career.hardGames++; career.hardWords+=found;
@@ -830,7 +845,7 @@ function refresh(){
   if(tut) h.innerHTML=tutMsg();
   else if(endgame) h.innerHTML='<b>Endgame.</b> An empty row opened up — columns can park a letter in a socket, so you can reorder freely.';
   else if(challenge) h.innerHTML=`<b>Duel.</b> Beat <b>${challenge.target} ${challenge.metric}</b> on this exact board.`;
-  else if(hard&&found===0) h.textContent='Two letters of each word are showing. The clock starts once you land your first word.';
+  else if(hard&&found===0) h.textContent=(custom?`${custom.s} letter${custom.s>1?'s':''} of each word ${custom.s>1?'are':'is'}`:'Two letters of each word are')+' showing. The clock starts once you land your first word.';
   else if(hard) h.textContent=`Next word is worth ${rushBonus(found+1)}s.`;
   else if(custom&&found===0) h.textContent=`${custom.s} letter${custom.s>1?'s':''} of each word ${custom.s>1?'are':'is'} showing.`+(custom.t?' The clock starts on your first move.':'');
   else if(found===0) h.textContent='One letter of each word is showing. Build something and watch what lights up.';
@@ -955,7 +970,12 @@ function paintStats(){
       box('Words total',c.hardWords)+box('Avg per run',avgW)+
     `</div><div class="sect">Daily</div><div class="grid2">`+
       box('Streak',c.streak||0)+box('Best streak',c.maxStreak||0)+
-    `</div><div class="sect">Collection</div><div class="grid2">`+
+    `</div>`+
+    ((c.duelsWon||c.duelsLost||c.duelsTied)?`<div class="sect">Duels</div><div class="grid2">`+
+      box('Won',c.duelsWon||0)+box('Lost',c.duelsLost||0)+
+      ((c.duelsTied)?box('Tied',c.duelsTied):'')+
+    `</div>`:'')+
+    `<div class="sect">Collection</div><div class="grid2">`+
       box('Words found',uniq)+box('Of dictionary',Math.round(1000*uniq/DICT.size)/10+'%')+
     `</div>`;
 }
@@ -966,7 +986,8 @@ el('sBack').onclick=()=>show('scMenu');
 el('bWipe').onclick=()=>{
   Object.assign(career,{deals:0,wins:0,best:null,hardBest:0,points:30,
     freeGames:0,freeMoves:0,hardGames:0,hardWords:0,collected:[],hints:0,
-    daily:null,streak:0,maxStreak:0,bestBy:{},freeTime:0,bestTime:null,redsTotal:0,hist:{}});
+    daily:null,streak:0,maxStreak:0,bestBy:{},freeTime:0,bestTime:null,redsTotal:0,hist:{},
+    duelsWon:0,duelsLost:0,duelsTied:0});
   save(); paintStats(); refresh();
 };
 function toMenu(){
@@ -982,7 +1003,7 @@ function start(m,s,daily,size){
   mode=m; isDaily=!!daily; show('scGame'); el('veil').classList.remove('on');
   deal(s); requestAnimationFrame(layout);
 }
-function startCustom(cfg,s){ pendingCustom={...cfg}; start('free',s,false,cfg.l); }
+function startCustom(cfg,s){ pendingCustom={...cfg}; start(cfg.m?'hard':'free',s,false,cfg.l); }
 function showEnd(){
   const hard=mode==='hard';
   const canCont = hard && done==='timeup' && !usedContinue && career.points>=CONT_COST;
@@ -997,7 +1018,7 @@ function showEnd(){
       +(custom?'':` · +${N===4?10:N===6?25:15} points`)
       +(reds?` · ${reds} ruled out`:'')+hintTail;}
   else if(done==='timeup'){title='Time';big=found;cls='bad';
-    sub=custom?`of ${targets.length} found`+hintTail
+    sub=custom?(custom.m?`word${found===1?'':'s'}`:`of ${targets.length} found`)+hintTail
       :`word${found===1?'':'s'} · +${score} points`+hintTail;}
   else {title='Gave up';big=found;cls='bad';sub=`of ${targets.length} found`;}
   let duel='';
@@ -1013,6 +1034,12 @@ function showEnd(){
   const b36=n=>n.toString(36).toUpperCase().padStart(2,'0');
   const ch = (done==='win'&&mode!=='hard'&&mv>0&&mv<1296) ? 'B'+b36(mv)+dealCode()
     : (mode==='hard'&&found>0&&found<1296) ? 'R'+b36(found)+dealCode() : null;
+  /* the bar ratchets: beat the duel target and a retry races your new score */
+  if(challenge&&ch){
+    const mine=challenge.metric==='moves'?(done==='win'?mv:null):found;
+    if(mine!==null&&(challenge.metric==='moves'?mine<challenge.target:mine>challenge.target))
+      challenge={metric:challenge.metric,target:mine,full:ch};
+  }
   el('card').innerHTML=
     `<h2>${title}</h2><div class="big ${cls}">${big}</div><p class="sub">${sub}</p>`+duel+
     (done==='win'&&career.best===mv?'<p class="sub" style="color:var(--hit)">New best.</p>':'')+
@@ -1190,21 +1217,28 @@ const BLURB={
   hard:'A race, not a puzzle. The clock starts after your first word, each word buys more time, and every board is replaced the moment you solve it.',
   cust:'Your board, your rules. House games pay no points and set no bests — the code carries the rules, so a shared board plays the same for everyone.'
 };
-/* custom-rule picker: last-used rules live in career.custom */
-const CUST_DEF={l:5,r:5,s:1,k:1,t:0,h:1};
+/* custom-rule picker: last-used rules live in career.custom.
+   m=0 solve-the-board, m=1 endless rush; b scales the rush time-per-word payout */
+const CUST_DEF={l:5,r:5,s:1,k:1,t:0,h:1,m:0,b:1};
+const CUST_OPTS={m:[0,1],r:[2,3,4,5,6],l:[4,5,6],s:[1,2,3],k:[0,1,2],t:CUST_TIMES,h:[0,1],b:[0,1,2]};
 let cust={...CUST_DEF};
-const CUST_ROWS=[
-  {key:'r',label:'Words',opts:[2,3,4,5,6]},
-  {key:'l',label:'Letters',opts:[4,5,6]},
-  {key:'s',label:'Shown at start',opts:[1,2,3]},
-  {key:'k',label:'Clues per word',opts:[0,1,2]},
-  {key:'t',label:'Time limit',opts:CUST_TIMES,fmt:v=>v?(v/60)+'m':'Off'},
+const custRows=()=>[
+  {key:'m',label:'Mode',opts:CUST_OPTS.m,fmt:v=>v?'Rush':'Solve'},
+  {key:'r',label:'Words',opts:CUST_OPTS.r},
+  {key:'l',label:'Letters',opts:CUST_OPTS.l},
+  {key:'s',label:'Shown at start',opts:CUST_OPTS.s}
+].concat(cust.m?[
+  {key:'t',label:'Start time',opts:CUST_OPTS.t,fmt:v=>v?(v/60)+'m':'60s'},
+  {key:'b',label:'Time per word',opts:CUST_OPTS.b,fmt:v=>['Tight','Normal','Rich'][v]}
+]:[
+  {key:'k',label:'Clues per word',opts:CUST_OPTS.k},
+  {key:'t',label:'Time limit',opts:CUST_OPTS.t,fmt:v=>v?(v/60)+'m':'Off'},
   {key:'h',label:'Hints',opts:[1,0],fmt:v=>v?'On':'Off'}
-];
+]);
 function paintCust(){
   if(career.custom) Object.assign(cust,career.custom);
-  CUST_ROWS.forEach(rw=>{ if(!rw.opts.includes(cust[rw.key])) cust[rw.key]=CUST_DEF[rw.key]; });
-  el('custPanel').innerHTML=CUST_ROWS.map(rw=>
+  Object.keys(CUST_OPTS).forEach(k=>{ if(!CUST_OPTS[k].includes(cust[k])) cust[k]=CUST_DEF[k]; });
+  el('custPanel').innerHTML=custRows().map(rw=>
     `<div class="crow"><span>${rw.label}</span><div class="pick">`+
     rw.opts.map(v=>`<button data-k="${rw.key}" data-v="${v}"`+
       ` aria-pressed="${String(cust[rw.key]===v)}">${rw.fmt?rw.fmt(v):v}</button>`).join('')+
@@ -1225,8 +1259,10 @@ function paintPick(){
   const b=el('blurb'), play=el('goPlay');
   if(pick==='cust'){
     paintCust();
-    b.innerHTML=BLURB.cust+`<br>${cust.r} words of ${cust.l} letters`
-      +(cust.t?` · ${cust.t/60}m limit`:'')+(cust.h?'':' · no hints');
+    b.innerHTML=BLURB.cust+`<br>${cust.m?'Rush · ':''}${cust.r} words of ${cust.l} letters`
+      +(cust.m
+        ? (cust.t?` · ${cust.t/60}m start`:'')+(cust.b!==1?` · ${['tight','normal','rich'][cust.b]} clock`:'')
+        : (cust.t?` · ${cust.t/60}m limit`:'')+(cust.h?'':' · no hints'));
     play.textContent='Play';
   } else if(pick==='daily'){
     if(dailyDone()){
@@ -1275,13 +1311,14 @@ function shareDaily(){
    iframe, so typing the code is the way in. */
 function playCode(raw){
   raw=(raw||'').toUpperCase().replace(/[^0-9A-Z]/g,'');
-  /* challenge codes: B<mv:2×base36><board code> beats moves, R<words:2×base36><plain code>
-     replays the run in Rush. Lengths 9/10/16 never collide with plain (6/7) or C (13) codes. */
-  if((raw[0]==='B'||raw[0]==='R')&&[9,10,16].includes(raw.length)){
+  /* challenge codes: B<mv:2×base36><board code> beats moves, R<words:2×base36><rush board>
+     — a plain code replayed in Rush, or a C-code whose own mode is Rush.
+     Lengths 9/10/16/18 never collide with plain (6/7) or C (13/15) codes. */
+  if((raw[0]==='B'||raw[0]==='R')&&[9,10,16,18].includes(raw.length)){
     const target=parseInt(raw.slice(1,3),36), rest=raw.slice(3);
     if(!Number.isFinite(target)||target<1) return false;
-    if(raw[0]==='B'){
-      pendingChallenge={metric:'moves',target,full:raw};
+    if(raw[0]==='B'||rest[0]==='C'){
+      pendingChallenge={metric:raw[0]==='B'?'moves':'words',target,full:raw};
       if(playCode(rest)) return true;
       pendingChallenge=null; return false;
     }
@@ -1294,11 +1331,13 @@ function playCode(raw){
     }
     return false;
   }
-  if(raw[0]==='C'&&raw.length===13){
-    const d=raw.slice(1,7), v=seedOfCode(raw.slice(7));
-    const cfg={l:+d[0],r:+d[1],s:+d[2],k:+d[3],t:CUST_TIMES[+d[4]],h:+d[5]};
+  if(raw[0]==='C'&&(raw.length===13||raw.length===15)){
+    const d=raw.slice(1,-6), v=seedOfCode(raw.slice(-6));
+    const cfg={l:+d[0],r:+d[1],s:+d[2],k:+d[3],t:CUST_TIMES[+d[4]],h:+d[5],
+      m:d.length>6?+d[6]:0, b:d.length>6?+d[7]:1};
     const ok=[4,5,6].includes(cfg.l)&&cfg.r>=2&&cfg.r<=6&&cfg.s>=1&&cfg.s<=3
-      &&cfg.k>=0&&cfg.k<=2&&cfg.t!==undefined&&(cfg.h===0||cfg.h===1);
+      &&cfg.k>=0&&cfg.k<=2&&cfg.t!==undefined&&(cfg.h===0||cfg.h===1)
+      &&(cfg.m===0||cfg.m===1)&&cfg.b>=0&&cfg.b<=2;
     if(ok&&isFinite(v)){ startCustom(cfg,v); return true; }
     return false;
   }
@@ -1456,6 +1495,10 @@ async function load(){
 refresh(); load().then(()=>{
   if(!career.tutorialDone && !career.deals && !location.hash) setTimeout(startTutorial,120);
 });
+/* PWA: install + offline, for direct hosting only — pointless inside the itch iframe */
+if('serviceWorker' in navigator && !EMBEDDED &&
+   (location.protocol==='https:'||location.hostname==='localhost'))
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>

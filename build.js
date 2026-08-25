@@ -20,10 +20,11 @@ const clean=d=>{fs.rmSync(d,{recursive:true,force:true});fs.mkdirSync(d,{recursi
 
 clean(DIST);
 
-// --- dist/web: files as-is ---
+// --- dist/web: files as-is (PWA files ride along; itch ignores them harmlessly) ---
 const WEB=path.join(DIST,'web');
 fs.mkdirSync(WEB,{recursive:true});
-for(const f of ['index.html',DICT,GLOSS]) fs.copyFileSync(path.join(ROOT,f),path.join(WEB,f));
+for(const f of ['index.html',DICT,GLOSS,'manifest.webmanifest','sw.js','icon-192.png','icon-512.png'])
+  fs.copyFileSync(path.join(ROOT,f),path.join(WEB,f));
 
 // --- dist/wordliz-itch.zip: same files, index.html at archive root ---
 const zipPath=path.join(DIST,'wordliz-itch.zip');
