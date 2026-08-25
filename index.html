@@ -241,6 +241,12 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
       <div id="custPanel" role="group" aria-label="Custom rules" hidden></div>
       <button class="btn primary" id="goPlay" style="margin-top:12px">Play</button>
       <p class="blurb" id="blurb"></p>
+      <div class="codebox">
+        <input id="codeIn" placeholder="Have a board code?" maxlength="16"
+          autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"
+          aria-label="Board code">
+        <button class="btn ghost" id="codeGo" style="width:auto;flex:0 0 auto;padding:12px 20px">Play</button>
+      </div>
     </div>
     <div class="tools">
       <button class="tool" id="bRules">How to play</button>
@@ -292,7 +298,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
       <p>Your board, your rules: pick how many words and how long, how many letters show from the start, how many a found word unlocks, an optional clock, and whether hints are allowed. House games pay no points and set no bests. A custom board's code starts with <b>C</b> and carries the rules along with the shuffle, so a shared link plays exactly the same for everyone.</p>
 
       <h3>Sharing a board</h3>
-      <p>Every board is generated from a single number, so it fits in a short code like <b>PS9WXB</b> (4×4 and 6×6 boards carry a leading <b>4</b> or <b>6</b>). The code and a link appear when a game ends. Open somebody's link and you land on their exact board — same words, same shuffle, same clues. Nothing is uploaded; the board is rebuilt from the number.</p>
+      <p>Every board is generated from a single number, so it fits in a short code like <b>PS9WXB</b> (4×4 and 6×6 boards carry a leading <b>4</b> or <b>6</b>, custom boards start with <b>C</b>). The code and a link appear when a game ends. Open somebody's link — or type their code into the box on the menu — and you land on their exact board: same words, same shuffle, same clues. Nothing is uploaded; the board is rebuilt from the number, so a code works in any copy of the game.</p>
       <button class="btn ghost" id="bTut" style="margin-top:20px">Play the tutorial</button>
     </div>
   </section>
@@ -469,6 +475,11 @@ const dealCode=()=> custom
   ? 'C'+custom.l+custom.r+custom.s+custom.k+CUST_TIMES.indexOf(custom.t)+custom.h+codeOf(seed)
   : (N===5?'':N)+codeOf(seed);
 const seedOfCode=c=>{const v=parseInt(c,36);return Number.isFinite(v)?v%SEED_MAX:NaN;};
+/* itch.io runs the game in a CDN iframe: deep links can't reach it and the frame URL
+   dies on re-upload, so share the store page + code instead of a link */
+const ITCH_URL='https://onagood.itch.io/wordliz';
+const EMBEDDED=(()=>{try{if(window.self!==window.top)return true;}catch(e){return true;}
+  return /(^|\.)itch\.(zone|io)$|hwcdn\.net$/.test(location.hostname);})();
 function setSeed(x){seed=x>>>0;rnd=mulberry32(seed);}
 const todayKey=()=>new Date().toISOString().slice(0,10);
 const yesterKey=()=>new Date(Date.now()-864e5).toISOString().slice(0,10);
@@ -998,12 +1009,9 @@ function showEnd(){
     const line = (done==='win' ? `solved in ${mv} moves`
       : (mode==='hard' ? `${found} words, ${score} pts` : `${found}/${targets.length} found`))
       + (hintsUsed?` (${hintsUsed} hint${hintsUsed>1?'s':''})`:'');
-    const url=location.origin+location.pathname+'#'+dealCode();
-    const txt=`Wordliz — ${isDaily?'daily board':'board '+dealCode()}\n${line}`+(mv?`\n${dirSig()}`:'')+`\nSame board: ${url}`;
-    const ok=()=>{el('bShare').textContent='Copied — send it to anyone';};
-    if(navigator.share) navigator.share({text:txt}).catch(()=>{
-      navigator.clipboard?.writeText(txt).then(ok,()=>{});});
-    else navigator.clipboard?.writeText(txt).then(ok,()=>{});
+    shareText(`Wordliz — ${isDaily?'daily — ':''}${line}`+(mv?`\n${dirSig()}`:'')
+      +`\nCode: ${dealCode()}`
+      +`\nPlay: ${EMBEDDED?ITCH_URL:location.origin+location.pathname}`, el('bShare'));
   };
   el('bAgain').onclick=()=>custom?startCustom(custom):start(mode);
   el('bMenu').onclick=()=>{el('veil').classList.remove('on');show('scMenu');refresh();};
@@ -1051,13 +1059,25 @@ function askHint(t){
   el('hNo').onclick=close;
   el('veil').classList.add('on');
 }
+function shareText(txt,btn){
+  const ok=()=>{btn.textContent='Copied — send it to anyone';};
+  if(navigator.share) navigator.share({text:txt}).catch(()=>{
+    navigator.clipboard?.writeText(txt).then(ok,()=>{});});
+  else navigator.clipboard?.writeText(txt).then(ok,()=>{});
+}
 function showPause(){
   if(done) return;
   paused=true; stopClock();
   el('card').innerHTML=`<h2>Paused</h2><p class="sub" style="margin-top:8px">`+
     ((mode==='hard'||(custom&&custom.t))?'The clock is stopped.':'Take your time.')+`</p>`+
+    (tut?'':`<p class="sub" style="margin-top:8px;font-family:var(--mono);font-size:.72rem;letter-spacing:.1em">`+
+      `${isDaily?'DAILY · ':custom?'CUSTOM · ':''}DEAL ${dealCode()}</p>`)+
     `<button class="btn primary" id="bResume">Resume</button>`+
+    (tut?'':`<button class="btn ghost" id="pShare">Share this board</button>`)+
     `<button class="btn ghost" id="bQuit">Quit to menu</button>`;
+  if(!tut) el('pShare').onclick=()=>shareText(
+    `Wordliz — try this board\nCode: ${dealCode()}`+
+    `\nPlay: ${EMBEDDED?ITCH_URL:location.origin+location.pathname}`, el('pShare'));
   el('bResume').onclick=()=>{
     paused=false; el('veil').classList.remove('on');
     if(mode==='hard'&&found>0) startClock();
@@ -1181,29 +1201,49 @@ function shareDaily(){
   const line=d.solved?`solved in ${d.moves} moves`:`${d.found}/5 found`;
   const txt=`Wordliz daily ${d.date} \u2014 ${line}`+
     (career.streak>1?` \u00b7 ${career.streak}-day streak`:'')+
-    `\n${location.origin+location.pathname}`;
+    `\n${EMBEDDED?ITCH_URL:location.origin+location.pathname}`;
   const ok=()=>{el('goPlay').textContent='Copied';setTimeout(paintPick,1600);};
   if(navigator.share) navigator.share({text:txt}).catch(()=>navigator.clipboard?.writeText(txt).then(ok,()=>{}));
   else navigator.clipboard?.writeText(txt).then(ok,()=>{});
 }
 
-/* a ...#PS9WXB link opens that exact board right away; C-codes carry custom rules too */
-(function fromLink(){
-  const raw=(location.hash||'').slice(1).toUpperCase().replace(/[^0-9A-Z]/g,'');
+/* one code, any host: PS9WXB (5×5), 4/6-prefixed sizes, C-codes with custom rules.
+   Used by #hash links and by the menu's code box — on itch.io links can't reach the
+   iframe, so typing the code is the way in. */
+function playCode(raw){
+  raw=(raw||'').toUpperCase().replace(/[^0-9A-Z]/g,'');
   if(raw[0]==='C'&&raw.length===13){
     const d=raw.slice(1,7), v=seedOfCode(raw.slice(7));
     const cfg={l:+d[0],r:+d[1],s:+d[2],k:+d[3],t:CUST_TIMES[+d[4]],h:+d[5]};
     const ok=[4,5,6].includes(cfg.l)&&cfg.r>=2&&cfg.r<=6&&cfg.s>=1&&cfg.s<=3
       &&cfg.k>=0&&cfg.k<=2&&cfg.t!==undefined&&(cfg.h===0||cfg.h===1);
-    if(ok&&isFinite(v)){ setTimeout(()=>startCustom(cfg,v),0); return; }
+    if(ok&&isFinite(v)){ startCustom(cfg,v); return true; }
+    return false;
   }
   let sz=5, code=raw;
   if(raw.length===7&&(raw[0]==='4'||raw[0]==='6')){sz=+raw[0];code=raw.slice(1);}
   if(code.length>=1&&code.length<=6){
     const v=seedOfCode(code);
-    if(isFinite(v)) setTimeout(()=>start('free',v,false,sz),0);
+    if(isFinite(v)){ start('free',v,false,sz); return true; }
   }
+  return false;
+}
+(function fromLink(){
+  const raw=(location.hash||'').slice(1);
+  if(raw) setTimeout(()=>playCode(raw),0);
 })();
+const goCode=()=>{
+  const v=el('codeIn').value;
+  if(!v.trim()) return;
+  el('codeIn').value='';
+  if(playCode(v)){ el('codeIn').blur(); }
+  else{
+    el('codeIn').placeholder='Not a valid code';
+    setTimeout(()=>{el('codeIn').placeholder='Have a board code?';},1800);
+  }
+};
+el('codeGo').onclick=goCode;
+el('codeIn').addEventListener('keydown',e=>{if(e.key==='Enter')goCode();});
 el('bPause').onclick=showPause;
 el('bUndo').onclick=()=>{
   if(!undoState||done||busy||paused||tut) return;
