@@ -1010,14 +1010,19 @@ function showEnd(){
     else if(mine===t)    duel=`<p class="sub">Dead heat — ${t} ${u} apiece.</p>`;
     else                 duel=`<p class="sub" style="color:var(--acc)">Duel lost — their ${t} ${u} stand.</p>`;
   }
+  const b36=n=>n.toString(36).toUpperCase().padStart(2,'0');
+  const ch = (done==='win'&&mode!=='hard'&&mv>0&&mv<1296) ? 'B'+b36(mv)+dealCode()
+    : (mode==='hard'&&found>0&&found<1296) ? 'R'+b36(found)+dealCode() : null;
   el('card').innerHTML=
     `<h2>${title}</h2><div class="big ${cls}">${big}</div><p class="sub">${sub}</p>`+duel+
     (done==='win'&&career.best===mv?'<p class="sub" style="color:var(--hit)">New best.</p>':'')+
     (done==='timeup'&&found===career.hardBest&&found>0?'<p class="sub" style="color:var(--hit)">New best.</p>':'')+
     (words?`<div class="found">${words}</div><p class="defout" id="defOut">Tap a word to see what it means.</p>`:'')+
     `<p class="sub" style="margin-top:14px">`+
-      `${isDaily?'Daily board · ':custom?'Custom board · ':''}${codeChip()}`+
+      `${isDaily?'Daily board · ':custom?'Custom board · ':''}${codeChip(ch)}`+
       (mv?`<br><span style="font-family:var(--mono);font-size:.72rem;letter-spacing:.1em">${dirSig()}</span>`:'')+`</p>`+
+    (ch?`<p class="sub codenote">A challenge code — tap to copy. It carries your `+
+      `${mode==='hard'?found+' words':mv+' moves'}: whoever enters it plays this board against that score.</p>`:'')+
     `<button class="btn ghost" id="bShare">Share this deal</button>`+
     (canCont?`<button class="btn primary" id="bCont">Continue · ${CONT_COST} pts for ${CONT_TIME}s</button>`:'')+
     `<button class="btn${canCont?' ghost':' primary'}" id="bAgain">${challenge?'Retry this board':'Play again'}</button>`+
@@ -1036,9 +1041,6 @@ function showEnd(){
     const line = (done==='win' ? `solved in ${mv} moves`
       : (mode==='hard' ? `${found} words, ${score} pts` : `${found}/${targets.length} found`))
       + (hintsUsed?` (${hintsUsed} hint${hintsUsed>1?'s':''})`:'');
-    const b36=n=>n.toString(36).toUpperCase().padStart(2,'0');
-    const ch = (done==='win'&&mode!=='hard'&&mv>0&&mv<1296) ? 'B'+b36(mv)+dealCode()
-      : (mode==='hard'&&found>0&&found<1296) ? 'R'+b36(found)+dealCode() : null;
     shareText(`Wordliz — ${isDaily?'daily — ':''}${line}`+(mv?`\n${dirSig()}`:'')
       +(ch?`\nChallenge code: ${ch} — beat my ${mode==='hard'?found+' words':mv+' moves'}`
           :`\nCode: ${dealCode()}`)
@@ -1115,7 +1117,7 @@ function shareText(txt,btn){
   else copyText(txt).then(ok,fail);
 }
 /* the deal code as a tap-to-copy chip */
-const codeChip=()=>`<button class="codechip" data-code="${dealCode()}">${dealCode()}</button>`;
+const codeChip=c=>{c=c||dealCode();return `<button class="codechip" data-code="${c}">${c}</button>`;};
 function armCodeChips(root){
   root.querySelectorAll('.codechip').forEach(b=>b.onclick=()=>{
     copyText(b.dataset.code).then(()=>{
