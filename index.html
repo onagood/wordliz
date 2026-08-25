@@ -254,7 +254,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
           aria-label="Board code">
         <button class="btn ghost" id="codeGo" style="width:auto;flex:0 0 auto;padding:12px 20px">Play</button>
       </div>
-      <p class="codenote">A code recreates a board exactly — same words, same shuffle, in any copy of the game. Get one from the pause or end screen, tap it to copy, send it to anyone.</p>
+      <p class="codenote">A code recreates a board exactly — same words, same shuffle, in any copy of the game. Get one from the pause or end screen, click it to copy, send it to anyone.</p>
     </div>
     <div class="tools">
       <button class="tool" id="bRules">How to play</button>
@@ -1068,18 +1068,29 @@ function askHint(t){
   el('hNo').onclick=close;
   el('veil').classList.add('on');
 }
+/* clipboard, hostile-iframe edition: the itch.io frame doesn't delegate clipboard-write,
+   so navigator.clipboard rejects there — fall back to execCommand, then to a prompt */
 function copyText(s){
-  if(navigator.clipboard&&navigator.clipboard.writeText) return navigator.clipboard.writeText(s);
-  return new Promise((res,rej)=>{try{
-    const t=document.createElement('textarea'); t.value=s;
+  const legacy=()=>new Promise((res,rej)=>{
+    const t=document.createElement('textarea'); t.value=s; t.setAttribute('readonly','');
     t.style.cssText='position:fixed;left:-9999px;top:0';
-    document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); res();
-  }catch(e){rej(e);}});
+    document.body.appendChild(t); t.focus(); t.select();
+    let ok=false; try{ok=document.execCommand('copy');}catch(e){}
+    t.remove();
+    ok?res():rej(new Error('copy blocked'));
+  });
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    return navigator.clipboard.writeText(s).catch(legacy);
+  return legacy();
 }
 function shareText(txt,btn){
   const ok=()=>{btn.textContent='Copied — send it to anyone';};
-  if(navigator.share) navigator.share({text:txt}).catch(()=>{copyText(txt).then(ok,()=>{});});
-  else copyText(txt).then(ok,()=>{});
+  const fail=()=>{try{window.prompt('Copy this:',txt);}catch(e){}};
+  if(navigator.share) navigator.share({text:txt}).catch(e=>{
+    if(e&&e.name==='AbortError') return;          // user closed the share sheet — not a failure
+    copyText(txt).then(ok,fail);
+  });
+  else copyText(txt).then(ok,fail);
 }
 /* the deal code as a tap-to-copy chip */
 const codeChip=()=>`<button class="codechip" data-code="${dealCode()}">${dealCode()}</button>`;
@@ -1088,7 +1099,7 @@ function armCodeChips(root){
     copyText(b.dataset.code).then(()=>{
       b.textContent='Copied'; Haptics.tick();
       setTimeout(()=>{b.textContent=b.dataset.code;},1200);
-    },()=>{});
+    },()=>{ try{window.prompt('Copy the code:',b.dataset.code);}catch(e){} });
   });
 }
 function showPause(){
@@ -1098,7 +1109,7 @@ function showPause(){
     ((mode==='hard'||(custom&&custom.t))?'The clock is stopped.':'Take your time.')+
     (tut?'':' Quitting counts the board as played.')+`</p>`+
     (tut?'':`<p class="sub" style="margin-top:10px">${isDaily?'Daily board · ':custom?'Custom board · ':''}${codeChip()}</p>`+
-      `<p class="sub codenote" style="text-align:left">Tap the code to copy it — entered in the menu, it rebuilds this exact board for anyone.</p>`)+
+      `<p class="sub codenote" style="text-align:left">Click the code to copy it — entered in the menu, it rebuilds this exact board for anyone.</p>`)+
     `<button class="btn primary" id="bResume">Resume</button>`+
     (tut?'':`<button class="btn ghost" id="pShare">Share this board</button>`)+
     `<button class="btn ghost" id="bQuit">${tut?'Skip tutorial':'Quit to menu'}</button>`;
