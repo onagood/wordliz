@@ -139,6 +139,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
   background:var(--socket-bg);pointer-events:none}
 .nudge{border:0;background:transparent;color:var(--ink-soft);font-family:var(--mono);font-size:1rem;
   line-height:1;cursor:pointer;border-radius:6px;height:26px;transition:background .12s,color .12s}
+.nudge svg{display:block;margin:0 auto}
 .nudge:hover:not(:disabled){background:var(--ground-2);color:var(--acc)}
 .nudge:disabled{opacity:.14;cursor:default}
 
@@ -175,8 +176,9 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
   transform:translate(-50%,10px);transition:opacity .22s,transform .22s}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
-#tutCue{--d:1;position:absolute;z-index:4;pointer-events:none;font-size:1.7rem;font-weight:900;color:var(--acc);
-  text-shadow:0 2px 8px rgba(0,0,0,.25);transform:translate(-50%,-50%)}
+#tutCue{--d:1;position:absolute;z-index:4;pointer-events:none;font-size:1.9rem;color:var(--acc);
+  transform:translate(-50%,-50%)}
+#tutCue svg{display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,.28))}
 #tutCue.h{animation:cueH 1s ease-in-out infinite}
 #tutCue.v{animation:cueV 1s ease-in-out infinite}
 /* --d is the move direction (1 or -1), so the glide always matches where the arrow points */
@@ -668,20 +670,25 @@ function finish(win){
 }
 
 /* ---------- DOM ---------- */
-function nudge(l,a,fn,dis){const b=document.createElement('button');
-  b.className='nudge';b.textContent=l;b.setAttribute('aria-label',a);
+/* one arrow shape for every direction cue — a rotated SVG, so all four are identical
+   (unicode arrow glyphs come from different fallback fonts and don't match) */
+const ARROW=rot=>`<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"`+
+  ` style="transform:rotate(${rot}deg)"><path d="M4 12h13M11 5l7 7-7 7" fill="none"`+
+  ` stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+function nudge(rot,a,fn,dis){const b=document.createElement('button');
+  b.className='nudge';b.innerHTML=ARROW(rot);b.setAttribute('aria-label',a);
   if(dis)b.disabled=true;else b.onclick=fn;return b;}
 function build(){
   const R=grid.length;
   ['colTop','colBottom'].forEach(k=>{el(k).style.gridTemplateColumns=`repeat(${N},1fr)`;el(k).innerHTML='';});
   for(let c=0;c<N;c++){
-    el('colTop').appendChild(nudge('↑',`Column ${c+1} up`,()=>shiftCol(c,-1),R<2));
-    el('colBottom').appendChild(nudge('↓',`Column ${c+1} down`,()=>shiftCol(c,1),R<2));
+    el('colTop').appendChild(nudge(-90,`Column ${c+1} up`,()=>shiftCol(c,-1),R<2));
+    el('colBottom').appendChild(nudge(90,`Column ${c+1} down`,()=>shiftCol(c,1),R<2));
   }
   ['rowLeft','rowRight'].forEach(k=>el(k).innerHTML='');
   for(let r=0;r<R;r++){
-    el('rowLeft').appendChild(nudge('←',`Row ${r+1} left`,()=>shiftRow(r,-1)));
-    el('rowRight').appendChild(nudge('→',`Row ${r+1} right`,()=>shiftRow(r,1)));
+    el('rowLeft').appendChild(nudge(180,`Row ${r+1} left`,()=>shiftRow(r,-1)));
+    el('rowRight').appendChild(nudge(0,`Row ${r+1} right`,()=>shiftRow(r,1)));
   }
   boardEl.querySelectorAll('.socket').forEach(x=>x.remove());
   if(endgame) for(let r=0;r<R;r++) for(let c=0;c<N;c++){
@@ -803,7 +810,7 @@ function tutStep(){
   boardEl.appendChild(c);
   c.className = e.t==='r' ? 'h' : 'v';
   c.style.setProperty('--d',e.d);
-  c.textContent = e.t==='r' ? (e.d===1?'\u2192':'\u2190') : (e.d===1?'\u2193':'\u2191');
+  c.innerHTML = ARROW(e.t==='r' ? (e.d===1?0:180) : (e.d===1?90:-90));
   if(e.t==='r'){ c.style.left=(N*step/2)+'px'; c.style.top=(e.i*step+step/2)+'px'; }
   else{ c.style.left=(e.i*step+step/2)+'px'; c.style.top=(grid.length*step/2)+'px'; }
 }
