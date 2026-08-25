@@ -384,7 +384,7 @@ const ruN=(n,one,few,many)=>{n=Math.abs(n);
   if(n%10===1&&n%100!==11) return one;
   if(n%10>=2&&n%10<=4&&(n%100<12||n%100>14)) return few;
   return many;};
-LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:null,
+LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'gloss_ru.js',
   tut:{words:['игра','темп'],rows:['аигр','емпт'],steps:[null,
     {t:'r',i:0,d:-1,msg:'Обе строки <b>янтарные</b> — буквы те, порядок нет. Сдвиньте верхнюю строку <b>влево</b>: вся линия едет как одно целое.'},
     {t:'c',i:3,d:1, msg:'ИГРА забанковалась — вот и вся победа. Теперь <b>ТЕМП</b>: пустой ряд снизу — парковка. Потяните <b>последний столбец вниз</b>.'},
@@ -483,7 +483,9 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:n
     'Runs':'Заезды','Best run':'Лучший заезд','Words total':'Слов всего','Avg per run':'Ср. за заезд',
     'Streak':'Серия','Best streak':'Лучшая серия','Duels':'Дуэли','Won':'Победы','Lost':'Поражения','Tied':'Ничьи',
     'Collection':'Коллекция','Words found':'Слов найдено','Of dictionary':'Словаря открыто',
-    '{0}-day streak':n=>`серия ${n} ${ruN(n,'день','дня','дней')}`
+    '{0}-day streak':n=>`серия ${n} ${ruN(n,'день','дня','дней')}`,
+    'Language':'Язык','Close':'Закрыть',
+    'Interface and new boards. Codes always open in their own language.':'Интерфейс и новые доски. Коды всегда открываются на своём языке.'
   },
   rules:
     '<h3>Суть</h3>'+
@@ -562,6 +564,7 @@ function useGameLang(code){      // point the engine at a loaded language's data
 const idx=n=>Array.from({length:n},(_,i)=>i);
 
 let N=5, SCRAMBLE=22;
+const VERSION='2026-08-26';      // shown on the stats screen — bump on release
 const CONT_COST=100, CONT_TIME=20, HINT_COST=30;
 
 /* word meanings: per-language glossary; ships with the game, optional per language */
@@ -1172,7 +1175,8 @@ function paintStats(){
     `</div>`:'')+
     sect('Collection')+`<div class="grid2">`+
       box('Words found',uniq)+box('Of dictionary',Math.round(1000*uniq/DICT.size)/10+'%')+
-    `</div>`;
+    `</div>`+
+    `<p class="codenote">Wordliz · ${VERSION}</p>`;
 }
 el('bRules').onclick=()=>show('scRules');
 el('bStats').onclick=()=>{paintStats();show('scStats');};
@@ -1406,7 +1410,17 @@ async function switchUiLang(code){
 }
 el('bLang').onclick=()=>{
   const ks=Object.keys(LANGS);
-  switchUiLang(ks[(ks.indexOf(uiLang)+1)%ks.length]).then(()=>{Haptics.tick();Sfx.tick();});
+  el('card').innerHTML=`<h2>`+T('Language')+`</h2>`+
+    `<p class="sub" style="margin-top:8px">`+T('Interface and new boards. Codes always open in their own language.')+`</p>`+
+    ks.map(k=>`<button class="btn ${k===uiLang?'primary':'ghost'}" data-lang="${k}">${LANGS[k].name}</button>`).join('')+
+    `<button class="btn ghost" id="lgClose">`+T('Close')+`</button>`;
+  el('card').querySelectorAll('[data-lang]').forEach(b=>b.onclick=async()=>{
+    await switchUiLang(b.dataset.lang);
+    Haptics.tick(); Sfx.tick();
+    el('veil').classList.remove('on');
+  });
+  el('lgClose').onclick=()=>el('veil').classList.remove('on');
+  el('veil').classList.add('on');
 };
 function paintHap(){
   const b=el('bHap');
