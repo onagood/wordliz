@@ -5,20 +5,24 @@
 // Inputs (download separately into a dir, pass it as argv[2]):
 //   russian_cp1251.txt — https://raw.githubusercontent.com/danakt/russian-words/master/russian.txt
 //                        (~1.5M inflected forms, one per line, Windows-1251)
-//   ru_50k.txt         — https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/ru/ru_50k.txt
-//                        (OpenSubtitles 2018, "word count" per line, most frequent first)
+//   ru_full.txt        — https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/ru/ru_full.txt
+//                        (OpenSubtitles 2018 full list, "word count" per line, most frequent
+//                        first; ru_50k.txt works as a fallback but is too shallow for the
+//                        validation dict — Russian morphology spreads a lemma across many
+//                        forms, so everyday words like «мойка» rank ~69k)
 //   russian_nouns.txt  — https://raw.githubusercontent.com/Harrix/Russian-Nouns/main/dist/russian_nouns.txt
 //                        (noun lemmas, UTF-8) — seeds are frequent NOUNS only, so hidden
 //                        words are «стол», not «чтобы» or «знаешь»
 // Usage:
 //   node dict_ru.js <dir> [rankD] [rankS]
-//     rankD — frequency cutoff for the validation dict (default 40000, like English)
+//     rankD — frequency cutoff for the validation dict (default 150000 of the full list;
+//             noun lemmas join validation regardless of rank)
 //     rankS — frequency cutoff for the seed pool     (default 20000)
 const fs=require('fs');
 const path=require('path');
 
 const DIR=process.argv[2]||'.';
-const RANK_D=+process.argv[3]||40000;
+const RANK_D=+process.argv[3]||150000;
 const RANK_S=+process.argv[4]||20000;
 
 // ---- cp1251 → unicode (letters only; everything else passes through as-is) ----
@@ -71,12 +75,14 @@ for(const line of fs.readFileSync(path.join(DIR,'russian_nouns.txt'),'utf8').spl
   if(isWord(w)) nouns.add(w);
 }
 
-// ---- load frequency ranks ----
+// ---- load frequency ranks (full list preferred, 50k as fallback) ----
+const freqFile=fs.existsSync(path.join(DIR,'ru_full.txt'))?'ru_full.txt':'ru_50k.txt';
 const rank=new Map();
 let r=0;
-for(const line of fs.readFileSync(path.join(DIR,'ru_50k.txt'),'utf8').split('\n')){
+for(const line of fs.readFileSync(path.join(DIR,freqFile),'utf8').split('\n')){
   const w=norm(line.split(' ')[0]||'');
   r++;
+  if(r>RANK_D) break;
   if(isWord(w)&&!rank.has(w)) rank.set(w,r);
 }
 
@@ -88,6 +94,10 @@ for(const [w,rk] of rank){
   const L=w.length;
   if(rk<=RANK_D&&!hits(w,ROOT_DICT)) d[L].add(w);
   if(rk<=RANK_S&&nouns.has(w)&&!STOP_SEED.has(w)&&!hits(w,ROOT_SEED)) s[L].add(w);
+}
+// noun lemmas validate regardless of subtitle rank — «пряжа» is a word even at rank 172k
+for(const w of nouns){
+  if(big.has(w)&&!hits(w,ROOT_DICT)) d[w.length].add(w);
 }
 for(const L of [4,5,6]) for(const w of s[L]) d[L].add(w);   // seeds ⊆ d, always
 
