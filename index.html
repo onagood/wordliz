@@ -86,8 +86,15 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
 .codebox input{flex:1;min-width:0;font-family:var(--mono);font-size:1rem;font-weight:600;
   letter-spacing:.22em;text-align:center;text-transform:uppercase;padding:12px 10px;
   border:1px solid var(--frame);border-radius:999px;background:var(--tile);color:var(--ink)}
-.codebox input::placeholder{letter-spacing:.14em;font-weight:400;color:var(--ink-soft);text-transform:none}
+.codebox input::placeholder{font-family:var(--sans);letter-spacing:0;font-weight:400;
+  font-size:.88rem;color:var(--ink-soft);text-transform:none}
 .codebox input:focus{outline:none;border-color:var(--ink)}
+.codenote{margin:8px 2px 0;font-size:.73rem;color:var(--ink-soft);text-align:center}
+/* a deal code you can tap to copy */
+.codechip{font-family:var(--mono);font-size:.8rem;font-weight:600;letter-spacing:.14em;
+  color:var(--ink);background:var(--tile);border:1px dashed var(--frame);border-radius:8px;
+  padding:7px 12px;cursor:pointer;display:inline-block}
+.codechip:hover{border-color:var(--ink-soft)}
 .how{margin:30px 0 0;padding:16px;background:var(--ground-2);border-radius:12px}
 .how h2{font-family:var(--mono);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;
   color:var(--ink-soft);margin:0 0 10px;font-weight:600}
@@ -242,11 +249,12 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
       <button class="btn primary" id="goPlay" style="margin-top:12px">Play</button>
       <p class="blurb" id="blurb"></p>
       <div class="codebox">
-        <input id="codeIn" placeholder="Have a board code?" maxlength="16"
+        <input id="codeIn" placeholder="Enter a board code" maxlength="16"
           autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"
           aria-label="Board code">
         <button class="btn ghost" id="codeGo" style="width:auto;flex:0 0 auto;padding:12px 20px">Play</button>
       </div>
+      <p class="codenote">A code recreates a board exactly — same words, same shuffle, in any copy of the game. Get one from the pause or end screen, tap it to copy, send it to anyone.</p>
     </div>
     <div class="tools">
       <button class="tool" id="bRules">How to play</button>
@@ -989,8 +997,9 @@ function showEnd(){
     (done==='win'&&career.best===mv?'<p class="sub" style="color:var(--hit)">New best.</p>':'')+
     (done==='timeup'&&found===career.hardBest&&found>0?'<p class="sub" style="color:var(--hit)">New best.</p>':'')+
     (words?`<div class="found">${words}</div><p class="defout" id="defOut">Tap a word to see what it means.</p>`:'')+
-    `<p class="sub" style="margin-top:14px;font-family:var(--mono);font-size:.72rem;letter-spacing:.1em">`+
-      `${isDaily?'DAILY · ':custom?'CUSTOM · ':''}DEAL ${dealCode()}`+(mv?`<br>${dirSig()}`:'')+`</p>`+
+    `<p class="sub" style="margin-top:14px">`+
+      `${isDaily?'Daily board · ':custom?'Custom board · ':''}${codeChip()}`+
+      (mv?`<br><span style="font-family:var(--mono);font-size:.72rem;letter-spacing:.1em">${dirSig()}</span>`:'')+`</p>`+
     `<button class="btn ghost" id="bShare">Share this deal</button>`+
     (canCont?`<button class="btn primary" id="bCont">Continue · ${CONT_COST} pts for ${CONT_TIME}s</button>`:'')+
     `<button class="btn${canCont?' ghost':' primary'}" id="bAgain">Play again</button>`+
@@ -999,6 +1008,7 @@ function showEnd(){
     const w=sp.dataset.w, d=defOf(w);
     el('defOut').innerHTML=`<b>${w.toUpperCase()}</b> — ${d?esc(d):'no definition for this one'}`;
   });
+  armCodeChips(el('card'));
   if(canCont) el('bCont').onclick=()=>{
     career.points-=CONT_COST; usedContinue=true; done=null;
     timeLeft=CONT_TIME; el('veil').classList.remove('on');
@@ -1058,11 +1068,28 @@ function askHint(t){
   el('hNo').onclick=close;
   el('veil').classList.add('on');
 }
+function copyText(s){
+  if(navigator.clipboard&&navigator.clipboard.writeText) return navigator.clipboard.writeText(s);
+  return new Promise((res,rej)=>{try{
+    const t=document.createElement('textarea'); t.value=s;
+    t.style.cssText='position:fixed;left:-9999px;top:0';
+    document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); res();
+  }catch(e){rej(e);}});
+}
 function shareText(txt,btn){
   const ok=()=>{btn.textContent='Copied — send it to anyone';};
-  if(navigator.share) navigator.share({text:txt}).catch(()=>{
-    navigator.clipboard?.writeText(txt).then(ok,()=>{});});
-  else navigator.clipboard?.writeText(txt).then(ok,()=>{});
+  if(navigator.share) navigator.share({text:txt}).catch(()=>{copyText(txt).then(ok,()=>{});});
+  else copyText(txt).then(ok,()=>{});
+}
+/* the deal code as a tap-to-copy chip */
+const codeChip=()=>`<button class="codechip" data-code="${dealCode()}">${dealCode()}</button>`;
+function armCodeChips(root){
+  root.querySelectorAll('.codechip').forEach(b=>b.onclick=()=>{
+    copyText(b.dataset.code).then(()=>{
+      b.textContent='Copied'; Haptics.tick();
+      setTimeout(()=>{b.textContent=b.dataset.code;},1200);
+    },()=>{});
+  });
 }
 function showPause(){
   if(done) return;
@@ -1070,11 +1097,12 @@ function showPause(){
   el('card').innerHTML=`<h2>Paused</h2><p class="sub" style="margin-top:8px">`+
     ((mode==='hard'||(custom&&custom.t))?'The clock is stopped.':'Take your time.')+
     (tut?'':' Quitting counts the board as played.')+`</p>`+
-    (tut?'':`<p class="sub" style="margin-top:8px;font-family:var(--mono);font-size:.72rem;letter-spacing:.1em">`+
-      `${isDaily?'DAILY · ':custom?'CUSTOM · ':''}DEAL ${dealCode()}</p>`)+
+    (tut?'':`<p class="sub" style="margin-top:10px">${isDaily?'Daily board · ':custom?'Custom board · ':''}${codeChip()}</p>`+
+      `<p class="sub codenote" style="text-align:left">Tap the code to copy it — entered in the menu, it rebuilds this exact board for anyone.</p>`)+
     `<button class="btn primary" id="bResume">Resume</button>`+
     (tut?'':`<button class="btn ghost" id="pShare">Share this board</button>`)+
     `<button class="btn ghost" id="bQuit">${tut?'Skip tutorial':'Quit to menu'}</button>`;
+  if(!tut) armCodeChips(el('card'));
   if(!tut) el('pShare').onclick=()=>shareText(
     `Wordliz — try this board\nCode: ${dealCode()}`+
     `\nPlay: ${EMBEDDED?ITCH_URL:location.origin+location.pathname}`, el('pShare'));
@@ -1239,7 +1267,7 @@ const goCode=()=>{
   if(playCode(v)){ el('codeIn').blur(); }
   else{
     el('codeIn').placeholder='Not a valid code';
-    setTimeout(()=>{el('codeIn').placeholder='Have a board code?';},1800);
+    setTimeout(()=>{el('codeIn').placeholder='Enter a board code';},1800);
   }
 };
 el('codeGo').onclick=goCode;
