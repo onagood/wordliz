@@ -192,6 +192,12 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
   box-shadow:0 10px 30px rgba(0,0,0,.2);opacity:0;pointer-events:none;z-index:8;
   transform:translate(-50%,10px);transition:opacity .22s,transform .22s}
 #toast.on{opacity:1;transform:translate(-50%,0)}
+#toast.front{z-index:11}   /* achievement unlocks outrank the end-card veil */
+/* achievements on the stats screen */
+.kpi.ach dd{font-family:var(--sans);font-size:.72rem;font-weight:400;line-height:1.35;color:var(--ink-soft)}
+.kpi.ach.earned{border:1px solid var(--hit)}
+.kpi.ach.earned dt{color:var(--hit)}
+.kpi.ach.locked{opacity:.45}
 
 #tutCue{--d:1;position:absolute;z-index:4;pointer-events:none;font-size:1.9rem;color:var(--acc);
   transform:translate(-50%,-50%)}
@@ -393,12 +399,12 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'
     {t:'c',i:0,d:-1,msg:'Поднимите <b>первый столбец вверх</b>. Вот и вся игра.'}]},
   str:{
     'Every letter is on the table. The words are hidden. Slide the grid until they line up.':'Все буквы уже на столе. Слова спрятаны. Двигайте сетку, пока они не соберутся.',
-    'Daily':'Дейли','Free':'Свободно','Rush':'Раш','Custom':'Своя','Play':'Играть',
+    'Daily':'Дневная','Free':'Свободная','Rush':'Гонка','Custom':'Своя','Play':'Играть',
     'How to play':'Как играть','Stats':'Статы','Statistics':'Статистика','Reset all statistics':'Сбросить всю статистику',
     'Enter a board code':'Введите код доски','Not a valid code':'Не похоже на код',
     'A code recreates a board exactly — same words, same shuffle, in any copy of the game. Get one from the pause or end screen, click it to copy, send it to anyone.':'Код воссоздаёт доску в точности — те же слова, та же тасовка, в любой копии игры. Возьмите его на паузе или финальном экране, кликните, чтобы скопировать, и шлите кому угодно.',
     'The same board for everyone, once a day — always 5×5. No clock — your score is how few moves it took.':'Одна доска на всех, раз в день — всегда 5×5. Часов нет: счёт — это число ходов.',
-    'A fresh random board, as many as you like. Same rules as Daily, no streak.':'Свежая случайная доска, сколько угодно раз. Правила как в Дейли, но без серии.',
+    'A fresh random board, as many as you like. Same rules as Daily, no streak.':'Свежая случайная доска, сколько угодно раз. Правила как в Дневной, но без серии.',
     'A race, not a puzzle. The clock starts after your first word, each word buys more time, and every board is replaced the moment you solve it.':'Гонка, а не головоломка. Часы стартуют после первого слова, каждое слово докупает время, собранная доска тут же заменяется новой.',
     'Your board, your rules. House games pay no points and set no bests — the code carries the rules, so a shared board plays the same for everyone.':'Ваша доска, ваши правила. Домашние игры не платят очков и не ставят рекордов, а код несёт правила — общая доска у всех одинакова.',
     'Today’s board is done — <b>{0}</b>.':'Сегодняшняя доска пройдена — <b>{0}</b>.',
@@ -461,7 +467,7 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'
     'Dead heat — {0} words apiece.':n=>`Ничья — ровно ${n} ${ruN(n,'слово','слова','слов')} у обоих.`,
     'solved in {0} moves':n=>`решено за ${n} ${ruN(n,'ход','хода','ходов')}`,
     '{0} words, {1} pts':(a,b)=>`${a} ${ruN(a,'слово','слова','слов')}, ${b} очк.`,
-    '{0}/{1} found':'{0}/{1} найдено','daily':'дейли',
+    '{0}/{1} found':'{0}/{1} найдено','daily':'доска дня',
     'Challenge code: {0} — beat my {1} moves':(c,n)=>`Код-вызов: ${c} — побей мой результат: ${n} ${ruN(n,'ход','хода','ходов')}`,
     'Challenge code: {0} — beat my {1} words':(c,n)=>`Код-вызов: ${c} — побей мой результат: ${n} ${ruN(n,'слово','слова','слов')}`,
     'Code: {0}':'Код: {0}','Play: {0}':'Играть: {0}','try this board':'попробуй эту доску',
@@ -485,7 +491,29 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'
     'Collection':'Коллекция','Words found':'Слов найдено','Of dictionary':'Словаря открыто',
     '{0}-day streak':n=>`серия ${n} ${ruN(n,'день','дня','дней')}`,
     'Language':'Язык','Close':'Закрыть',
-    'Interface and new boards. Codes always open in their own language.':'Интерфейс и новые доски. Коды всегда открываются на своём языке.'
+    'Interface and new boards. Codes always open in their own language.':'Интерфейс и новые доски. Коды всегда открываются на своём языке.',
+    'Achievements':'Ачивки','Achievement unlocked':'Ачивка открыта',
+    'First blood':'Первая победа','Solve your first board':'Решите первую доску',
+    'Regular':'Завсегдатай','Solve 10 boards':'Решите 10 досок',
+    'Veteran':'Ветеран','Solve 50 boards':'Решите 50 досок',
+    'Warming up':'Разогрев','A 3-day daily streak':'Серия дневных 3 дня',
+    'One week':'Неделя','A 7-day daily streak':'Серия дневных 7 дней',
+    'Iron habit':'Железная привычка','A 30-day daily streak':'Серия дневных 30 дней',
+    'Sprinter':'Спринтер','5 words in one Rush run':'5 слов за один забег Гонки',
+    'Marathoner':'Марафонец','10 words in one Rush run':'10 слов за один забег Гонки',
+    'Time lord':'Повелитель времени','15 words in one Rush run':'15 слов за один забег Гонки',
+    'Heavyweight':'Тяжеловес','Solve a 6×6 board':'Решите доску 6×6',
+    'No help needed':'Без подсказок','Solve a board without hints':'Решите доску без хинтов',
+    'Lightning':'Молния','Solve a board in 90 seconds':'Решите доску за 90 секунд',
+    'Sceptic':'Скептик','Rule out 25 red words':'Отсейте 25 красных слов',
+    'Lexicographer':'Лексикограф','Rule out 100 red words':'Отсейте 100 красных слов',
+    'Collector':'Коллекционер','Find 100 different words':'Найдите 100 разных слов',
+    'Librarian':'Библиотекарь','Find 500 different words':'Найдите 500 разных слов',
+    'Walking dictionary':'Ходячий словарь','Find 2000 different words':'Найдите 2000 разных слов',
+    'Duelist':'Дуэлянт','Win a duel':'Выиграйте дуэль',
+    'Gunslinger':'Стрелок','Win 10 duels':'Выиграйте 10 дуэлей',
+    'Polyglot':'Полиглот','Play in two languages':'Сыграйте на двух языках',
+    'Hardcore':'Хардкор','Win a custom game with no free letters':'Выиграйте кастом без бесплатных букв'
   },
   rules:
     '<h3>Суть</h3>'+
@@ -503,18 +531,18 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'
     '<p>У каждого спрятанного слова часть букв открыта, остальные — точки. Тапните подсказку с пунктирной рамкой, чтобы купить ещё одну букву за 30 очков. Две буквы всегда остаются закрытыми — подсказка никогда не выдаёт слово целиком.</p>'+
     '<h3>Свободная</h3>'+
     '<p>Часов нет — таймер только записывает время. Забанкованная строка уходит с доски, сетка сжимается. Найденное слово открывает букву в одном из оставшихся (на 6×6 — в двух). Когда остаётся одна строка, под ней открывается пустой ряд — столбцы могут парковать буквы, и последнее слово перебирается свободно. Любая доска решаема. Решение платит 10, 15 или 25 очков по размеру доски.</p>'+
-    '<h3>Раш</h3>'+
+    '<h3>Гонка</h3>'+
     '<p>Открыты две буквы каждого слова, и больше не открываются. Часы стартуют после первого слова. Каждое слово докупает время, но выплата тает: 20с, 18с, 16с… до пола в 3с. Слово платит очко за букву. Забанкованная строка сразу заменяется — буквы нового слова прилетают вразброс по разным строкам. На нуле забег кончается; раз за забег можно купить 20 секунд за 100 очков.</p>'+
     '<h3>Размер доски</h3>'+
-    '<p>Свободная и Раш бывают 4×4, 5×5 и 6×6. Чем длиннее слова, тем слабее подсказки — поэтому 6×6 выдаёт буквы вдвое быстрее и начинает с лишней открытой. Рекорды хранятся по размерам.</p>'+
-    '<h3>Дейли</h3>'+
+    '<p>Свободная и Гонка бывают 4×4, 5×5 и 6×6. Чем длиннее слова, тем слабее подсказки — поэтому 6×6 выдаёт буквы вдвое быстрее и начинает с лишней открытой. Рекорды хранятся по размерам.</p>'+
+    '<h3>Дневная</h3>'+
     '<p>Одна доска на всех, раз в день, всегда 5×5. Решили — серия растёт; пропустили день — обнулилась. Только тут сравнение ходов честное: все играют одну тасовку.</p>'+
     '<h3>Своя</h3>'+
-    '<p>Ваши правила: сколько слов и какой длины, сколько букв открыто со старта, сколько открывает найденное слово, часы и хинты. Либо переключите режим в <b>Раш</b> и настройте гонку: стартовое время и щедрость выплат. Домашние игры не платят очков и не ставят рекордов. Код своей доски начинается с <b>C</b> и несёт правила вместе с тасовкой.</p>'+
+    '<p>Ваши правила: сколько слов и какой длины, сколько букв открыто со старта, сколько открывает найденное слово, часы и хинты. Либо переключите режим в <b>Гонку</b> и настройте её: стартовое время и щедрость выплат. Домашние игры не платят очков и не ставят рекордов. Код своей доски начинается с <b>C</b> и несёт правила вместе с тасовкой.</p>'+
     '<h3>Код доски</h3>'+
     '<p>Каждая доска — одно число, поэтому она помещается в короткий код вроде <b>PS9WXB</b>. Код и ссылка появляются в конце игры и на паузе. Введите чужой код в меню — и вы на той же доске: те же слова, та же тасовка. Ничего не загружается: доска строится из числа, так что код работает в любой копии игры. Русские коды начинаются с буквы <b>X</b>.</p>'+
     '<h3>Дуэли</h3>'+
-    '<p>Законченная игра делится <b>кодом-вызовом</b>: он несёт ваш результат поверх доски. Кто введёт код — сыграет ту же доску против вашего счёта (меньше ходов, а в Раше больше слов), получит вердикт в конце и может тут же кинуть вызов в ответ. Раш честный: слова-замены приходят всем в одном порядке.</p>'+
+    '<p>Законченная игра делится <b>кодом-вызовом</b>: он несёт ваш результат поверх доски. Кто введёт код — сыграет ту же доску против вашего счёта (меньше ходов, а в Гонке больше слов), получит вердикт в конце и может тут же кинуть вызов в ответ. Гонка честная: слова-замены приходят всем в одном порядке.</p>'+
     '<button class="btn ghost" id="bTut" style="margin-top:20px">Пройти обучение</button>'
 };
 let uiLang='en';                 // interface language (user preference)
@@ -826,11 +854,12 @@ function setFlash(kind,w){
     ? TF('<b style="color:var(--acc)">{0}</b> is a real word, but not one of the {1}.',W,targets.length)
       +(custom?'':' '+T('<b>+1 point</b>'))+g
     : TF('<b style="color:var(--hit)">{0}</b> banked.',W)+g;
+  t.classList.remove('front');
   t.classList.add('on');
   clearTimeout(setFlash.t);
   setFlash.t=setTimeout(()=>t.classList.remove('on'),def?5000:2000);
 }
-function hideFlash(){clearTimeout(setFlash.t);el('toast').classList.remove('on');}
+function hideFlash(){clearTimeout(setFlash.t);el('toast').classList.remove('on','front');}
 /* each new real-but-wrong word pays a point — once per game */
 function scanReds(){
   if(tut) return;
@@ -896,7 +925,10 @@ function finish(win){
     else if(mine===challenge.target) career.duelsTied=(career.duelsTied||0)+1;
     else career.duelsLost=(career.duelsLost||0)+1;
   }
-  if(custom){ save(); refresh(); showEnd(); return; }   // house rules: no points, no bests
+  if(custom){
+    if(win&&!custom.m&&custom.k===0) career.hardcoreWin=(career.hardcoreWin||0)+1;
+    save(); checkAch(); refresh(); showEnd(); return;   // house rules: no points, no bests
+  }
   if(mode==='hard'){
     career.hardGames++; career.hardWords+=found;
     if(found>career.hardBest) career.hardBest=found;
@@ -920,7 +952,7 @@ function finish(win){
     if(career.streak>career.maxStreak) career.maxStreak=career.streak;
     career.daily={date:todayKey(), solved:done==='win', moves:mv, found};
   }
-  save(); refresh(); showEnd();
+  save(); checkAch(); refresh(); showEnd();
 }
 
 /* ---------- DOM ---------- */
@@ -1144,6 +1176,44 @@ function histHtml(){
   }
   return out;
 }
+/* ---------- achievements: predicates over the career counters, so they
+   unlock retroactively and cost no storage beyond an id→timestamp map ---------- */
+const ACH=[
+  {id:'w1',  name:'First blood',       desc:'Solve your first board',            test:c=>c.wins>=1},
+  {id:'w10', name:'Regular',           desc:'Solve 10 boards',                   test:c=>c.wins>=10},
+  {id:'w50', name:'Veteran',           desc:'Solve 50 boards',                   test:c=>c.wins>=50},
+  {id:'s3',  name:'Warming up',        desc:'A 3-day daily streak',              test:c=>(c.maxStreak||0)>=3},
+  {id:'s7',  name:'One week',          desc:'A 7-day daily streak',              test:c=>(c.maxStreak||0)>=7},
+  {id:'s30', name:'Iron habit',        desc:'A 30-day daily streak',             test:c=>(c.maxStreak||0)>=30},
+  {id:'r5',  name:'Sprinter',          desc:'5 words in one Rush run',           test:c=>(c.hardBest||0)>=5},
+  {id:'r10', name:'Marathoner',        desc:'10 words in one Rush run',          test:c=>(c.hardBest||0)>=10},
+  {id:'r15', name:'Time lord',         desc:'15 words in one Rush run',          test:c=>(c.hardBest||0)>=15},
+  {id:'six', name:'Heavyweight',       desc:'Solve a 6×6 board',                 test:c=>!!(c.hist&&c.hist[6]&&Object.keys(c.hist[6]).length)},
+  {id:'pure',name:'No help needed',    desc:'Solve a board without hints',       test:c=>!!(c.bestBy&&Object.keys(c.bestBy).length)},
+  {id:'fast',name:'Lightning',         desc:'Solve a board in 90 seconds',       test:c=>c.bestTime!=null&&c.bestTime<=90},
+  {id:'red25',name:'Sceptic',          desc:'Rule out 25 red words',             test:c=>(c.redsTotal||0)>=25},
+  {id:'red100',name:'Lexicographer',   desc:'Rule out 100 red words',            test:c=>(c.redsTotal||0)>=100},
+  {id:'c100', name:'Collector',        desc:'Find 100 different words',          test:c=>(c.collected||[]).length>=100},
+  {id:'c500', name:'Librarian',        desc:'Find 500 different words',          test:c=>(c.collected||[]).length>=500},
+  {id:'c2000',name:'Walking dictionary',desc:'Find 2000 different words',        test:c=>(c.collected||[]).length>=2000},
+  {id:'d1',  name:'Duelist',           desc:'Win a duel',                        test:c=>(c.duelsWon||0)>=1},
+  {id:'d10', name:'Gunslinger',        desc:'Win 10 duels',                      test:c=>(c.duelsWon||0)>=10},
+  {id:'bi',  name:'Polyglot',          desc:'Play in two languages',             test:c=>(c.langsPlayed||[]).length>=2},
+  {id:'hc',  name:'Hardcore',          desc:'Win a custom game with no free letters', test:c=>(c.hardcoreWin||0)>=1}
+];
+function toastAch(names){
+  const t=el('toast');
+  t.innerHTML=`<b style="color:var(--hit)">`+T('Achievement unlocked')+`</b> — `+names.map(n=>T(n)).join(' · ');
+  t.classList.add('on','front');
+  clearTimeout(setFlash.t);
+  setFlash.t=setTimeout(()=>t.classList.remove('on','front'),3500);
+}
+function checkAch(){
+  const a=career.ach||(career.ach={});
+  const fresh=[];
+  for(const d of ACH) if(!a[d.id]&&d.test(career)){ a[d.id]=Date.now(); fresh.push(d.name); }
+  if(fresh.length){ save(); Haptics.hit(); toastAch(fresh); }
+}
 function paintStats(){
   const c=career, uniq=(c.collected||[]).length;
   const rate=c.freeGames?Math.round(100*c.wins/c.freeGames):0;
@@ -1176,6 +1246,9 @@ function paintStats(){
     sect('Collection')+`<div class="grid2">`+
       box('Words found',uniq)+box('Of dictionary',Math.round(1000*uniq/DICT.size)/10+'%')+
     `</div>`+
+    `<div class="sect">${T('Achievements')} · ${ACH.filter(d=>(c.ach||{})[d.id]).length}/${ACH.length}</div><div class="grid2">`+
+      ACH.map(d=>`<div class="kpi ach ${(c.ach||{})[d.id]?'earned':'locked'}"><dt>${T(d.name)}</dt><dd>${T(d.desc)}</dd></div>`).join('')+
+    `</div>`+
     `<p class="codenote">Wordliz · ${VERSION}</p>`;
 }
 el('bRules').onclick=()=>show('scRules');
@@ -1186,7 +1259,7 @@ el('bWipe').onclick=()=>{
   Object.assign(career,{deals:0,wins:0,best:null,hardBest:0,points:30,
     freeGames:0,freeMoves:0,hardGames:0,hardWords:0,collected:[],hints:0,
     daily:null,streak:0,maxStreak:0,bestBy:{},freeTime:0,bestTime:null,redsTotal:0,hist:{},
-    duelsWon:0,duelsLost:0,duelsTied:0});
+    duelsWon:0,duelsLost:0,duelsTied:0,ach:{},langsPlayed:[],hardcoreWin:0});
   save(); paintStats(); refresh();
 };
 function toMenu(){
@@ -1199,6 +1272,8 @@ function start(m,s,daily,size){
   custom=pendingCustom; pendingCustom=null;
   challenge=pendingChallenge; pendingChallenge=null;
   useGameLang(pendingLang||uiLang); pendingLang=null;
+  const lp=career.langsPlayed||(career.langsPlayed=[]);
+  if(!lp.includes(gameLang)){ lp.push(gameLang); save(); checkAch(); }
   N = custom ? custom.l : (daily ? 5 : (size||size===0 ? size : N));
   mode=m; isDaily=!!daily; show('scGame'); el('veil').classList.remove('on');
   deal(s); requestAnimationFrame(layout);
@@ -1755,6 +1830,7 @@ async function load(){
 
 refresh(); load().then(()=>{
   if(!career.tutorialDone && !career.deals && !location.hash) setTimeout(startTutorial,120);
+  checkAch();          // retroactive unlocks for careers built before achievements existed
 });
 /* PWA: install + offline, for direct hosting only — pointless inside the itch iframe */
 if('serviceWorker' in navigator && !EMBEDDED &&
