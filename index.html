@@ -469,7 +469,9 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'
     'Theme: auto':'Тема: авто','Theme: dark':'Тема: тёмная','Theme: light':'Тема: светлая',
     'Moves':'Ходы','Found':'Найдено','Time':'Время','Score':'Счёт',
     'Hint · {0}':'Подсказка · {0}','{0} pts':'{0} очк.','Undo':'Отмена','Skip tutorial':'Пропустить обучение',
-    '<b>{0}</b> points to spend on hints and continues':'<b>{0}</b> очков на подсказки и продолжения',
+    'You have <b>{0}</b> point':'У вас <b>{0}</b> очко',
+    'You have <b>{0}</b> points':n=>`У вас <b>${n}</b> ${ruN(n,'очко','очка','очков')}`,
+    'version {0}':'версия {0}',
     '1 letter of each word is showing.':'В каждом слове открыта одна буква.',
     '{0} letters of each word are showing.':n=>`В каждом слове ${ruN(n,'открыта','открыты','открыто')} ${n} ${ruN(n,'буква','буквы','букв')}.`,
     'Build something and watch what lights up.':'Соберите что-нибудь и смотрите, что подсветится.',
@@ -1132,7 +1134,7 @@ function refresh(){
     :T('No free letters — every word is on you.');
   else h.textContent=T(N>=6?'Each word you find reveals a letter in two of the others.':'Each word you find reveals a letter in one of the others.');
   paintHap(); paintSnd(); paintThm(); paintLang(); paintPick();
-  el('cv').innerHTML=TF('<b>{0}</b> points to spend on hints and continues',career.points);
+  el('cv').innerHTML=TF(career.points===1?'You have <b>{0}</b> point':'You have <b>{0}</b> points',career.points);
 }
 
 /* ---------- tutorial: a 2×4 board, five guided moves through the real engine ---------- */
@@ -1301,7 +1303,7 @@ function paintStats(){
     `<div class="sect">${T('Achievements')} · ${ACH.filter(d=>(c.ach||{})[d.id]).length}/${ACH.length}</div><div class="grid2">`+
       ACH.map(d=>`<div class="kpi ach ${(c.ach||{})[d.id]?'earned':'locked'}"><dt>${T(d.name)}</dt><dd>${T(d.desc)}</dd></div>`).join('')+
     `</div>`+
-    `<p class="codenote">Wordliz · ${VERSION}</p>`;
+    `<p class="codenote">Wordliz · ${TF('version {0}',VERSION)}</p>`;
 }
 el('bRules').onclick=()=>show('scRules');
 el('bStats').onclick=()=>{paintStats();show('scStats');};
