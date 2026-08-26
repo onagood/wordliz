@@ -84,6 +84,13 @@ b,strong{font-weight:600} /* Fredoka ships no 700 — keep bold at the loaded we
 .logo i:nth-child(3){transform:rotate(2deg)}
 .logo i:nth-child(5){transform:rotate(-2deg)}
 .logo i:nth-child(7){transform:rotate(3deg)}
+.logo i{cursor:pointer}
+.logo i.hop{animation:hop .52s cubic-bezier(.3,.7,.3,1)}
+@keyframes hop{0%,100%{translate:0 0}
+  30%{translate:0 calc(-1*var(--amp,12px))}
+  62%{translate:0 0}
+  80%{translate:0 calc(-.28*var(--amp,12px))}}
+@media(prefers-reduced-motion:reduce){.logo i.hop{animation:none}}
 .brand p{margin:14px 0 0;color:var(--ink-soft);font-size:.94rem;font-weight:500}
 .modes{margin:26px 0 0}
 /* segmented control (board size, custom-rule rows) */
@@ -1201,6 +1208,24 @@ function startTutorial(){
   requestAnimationFrame(()=>{layout(); tutStep();});
 }
 el('bTut').onclick=()=>startTutorial();
+/* tapping the wordmark drops a stone in it: the letter you hit bounces first
+   and the rest follow outward, each a little later and a little lower */
+(()=>{
+  const logo=document.querySelector('.logo'), keys=[...logo.children];
+  logo.addEventListener('pointerdown',e=>{
+    const hit=e.target.closest('i');
+    const c=hit?keys.indexOf(hit):(keys.length-1)/2;
+    Haptics.tick(); Sfx.tick();
+    keys.forEach(k=>k.classList.remove('hop'));
+    void logo.offsetWidth;                      // one reflow, so a re-tap restarts the wave
+    keys.forEach((k,i)=>{
+      const d=Math.abs(i-c);
+      k.style.animationDelay=Math.round(d*55)+'ms';
+      k.style.setProperty('--amp',Math.max(3,14-d*2.6).toFixed(1)+'px');
+      k.classList.add('hop');
+    });
+  });
+})();
 function skipTutorial(){
   tut=null; career.tutorialDone=true; save();
   const tc=document.getElementById('tutCue'); if(tc)tc.remove();
