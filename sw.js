@@ -1,6 +1,6 @@
 /* Wordliz service worker: precache the game, then stale-while-revalidate —
    offline play works from the first visit, updates arrive one load later. */
-const CACHE='wordliz-v1';
+const CACHE='wordliz-v2';
 const ASSETS=['./','./index.html','./words_en.js','./gloss_en.js',
   './manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{
