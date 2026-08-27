@@ -37,6 +37,20 @@ with a profanity/slur blocklist applied.
 
 More languages follow the same shape: `words_ru.js` etc.
 
+Russian (`words_ru.js`, rebuilt with `node dict_ru.js <dir>`) is drawn from three
+MIT-licensed lists: word forms from [danakt/russian-words](https://github.com/danakt/russian-words),
+frequency ranks from [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords)
+(OpenSubtitles 2018), and noun lemmas from [Harrix/Russian-Nouns](https://github.com/Harrix/Russian-Nouns)
+so the hidden words are things, not conjunctions.
+
+`gloss_ru.js` — rebuilt with `node glossary_ru.js <dir>`. Definitions come from
+the [Russian Wiktionary](https://ru.wiktionary.org/) via [kaikki.org](https://kaikki.org/ruwiktionary/),
+© Wiktionary contributors, reused under
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The builder
+trims each entry to one sense, so the file is an adapted version and carries the
+same licence — the notice is in the file's own header, since that is what ships.
+ShareAlike covers that file, not the game around it.
+
 `gloss_en.js` — one short meaning per dictionary word, shown for banked and
 “red” words. Rebuilt with `node glossary.js <wordnet-dict-dir>` whenever
 `words_en.js` changes (see the header of `glossary.js`). Derived from

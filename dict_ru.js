@@ -111,8 +111,16 @@ for(const L of [4,5,6]){
   console.log(`${L}: d=${d[L].size} s=${s[L].size}`);
   console.log(`   seed sample: ${[...s[L]].slice(0,12).join(', ')}`);
 }
-fs.writeFileSync(path.join(__dirname,'words_ru.js'),
-  '// Russian dictionary for Wordliz — built by dict_ru.js (see header for sources).\n'+
+// The attribution travels with the data, not just with this builder: dict_ru.js
+// is not shipped, words_ru.js is. All three sources are MIT.
+const CREDIT=
+  '// Russian dictionary for Wordliz — built by dict_ru.js.\n'+
   '// d = validation (red words), s = seeds the hidden words are drawn from.\n'+
-  'window.WORDLIZ_WORDS='+JSON.stringify(out)+';\n');
+  '//\n'+
+  '// Derived from three MIT-licensed sources:\n'+
+  '//   word forms      danakt/russian-words        https://github.com/danakt/russian-words\n'+
+  '//   frequency rank  hermitdave/FrequencyWords   https://github.com/hermitdave/FrequencyWords\n'+
+  '//   noun lemmas     Harrix/Russian-Nouns        https://github.com/Harrix/Russian-Nouns\n';
+fs.writeFileSync(path.join(__dirname,'words_ru.js'),
+  CREDIT+'window.WORDLIZ_WORDS='+JSON.stringify(out)+';\n');
 console.log('written: words_ru.js ('+Math.round(fs.statSync(path.join(__dirname,'words_ru.js')).size/1024)+' KB)');

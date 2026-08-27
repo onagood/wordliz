@@ -101,7 +101,18 @@ rl.on('close',()=>{
     const t=resolve(w);
     if(t) out[w]=t; else missed.push(w);
   }
-  const js='window.WORDLIZ_GLOSS='+JSON.stringify(out)+';\n';
+  // CC BY-SA is an attribution licence, so the credit has to ride in the shipped
+  // file itself — this builder is not distributed with the game, gloss_ru.js is.
+  // The definitions are trimmed and one sense per word is picked, which makes
+  // this an adapted version: it stays under the same licence as the wiki.
+  const CREDIT=
+    '// Definitions from the Russian Wiktionary (ru.wiktionary.org), extracted by\n'+
+    '// kaikki.org (Wiktextract). Shortened to one sense per word by glossary_ru.js.\n'+
+    '// Text © Wiktionary contributors, reused under CC BY-SA 4.0:\n'+
+    '//   https://ru.wiktionary.org/  ·  https://kaikki.org/ruwiktionary/\n'+
+    '//   https://creativecommons.org/licenses/by-sa/4.0/\n'+
+    '// This file is a derivative of that text and is licensed CC BY-SA 4.0 too.\n';
+  const js=CREDIT+'window.WORDLIZ_GLOSS='+JSON.stringify(out)+';\n';
   fs.writeFileSync(path.join(ROOT,'gloss_ru.js'),js);
   const kb=Math.round(Buffer.byteLength(js)/1024);
   console.log(`gloss_ru.js: ${Object.keys(out).length}/${WORDS.size} words (${kb} KB), ${missed.length} without a gloss; lemmas known: ${lemma.size}`);
