@@ -52,6 +52,15 @@ for(const f of FONTS.filter(x=>x.endsWith('.woff2'))){
   const b64=fs.readFileSync(path.join(FONT_DIR,f)).toString('base64');
   html=html.split(`url(fonts/${f})`).join(`url(data:font/woff2;base64,${b64})`);
 }
+// The OFL requires every copy carrying the font to carry the licence with it.
+// This target has no fonts/ folder to hold one, so it rides in an HTML comment.
+// Hyphen pairs in the licence text would close that comment early, hence the split.
+const LICENCES=FONTS.filter(f=>/OFL\.txt$/i.test(f))
+  .map(f=>`\n===== ${f} =====\n`+read(path.join('fonts',f)).replace(/--/g,'- -'))
+  .join('\n');
+html=html.replace('<style>',
+  '<!--\nEmbedded fonts are licensed under the SIL Open Font License 1.1.\n'+
+  LICENCES+'\n-->\n<style>');
 fs.writeFileSync(path.join(DIST,'artifact.html'),html);
 
 const size=f=>Math.round(fs.statSync(f).size/1024)+' KB';
