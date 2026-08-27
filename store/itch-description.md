@@ -15,9 +15,19 @@ and that is the entire game.
 
 - 🟩 **Green** — a hidden word. It banks itself.
 - 🟨 **Amber** — right letters, wrong order. Reorder the row, don't break it up.
-- 🟥 **Red** — a real English word, but not one of the hidden ones. Worth a point for ruling it out.
+- 🟥 **Red** — a real word, but not one of the hidden ones. Worth a point for ruling it out.
 
 Only hidden words can be banked. Everything else is information.
+
+Every word you turn up, banked or ruled out, shows what it means — the little
+dictionary ships with the game, so nothing is looked up online.
+
+### Two languages
+
+Play in **English** or **Russian**. Each language has its own word list and its
+own dictionary of meanings; the interface follows. Board codes carry their
+language with them, so a board someone shares opens in the language it was
+dealt in, whichever one you happen to be playing.
 
 ### Four ways to play
 
@@ -46,8 +56,17 @@ No accounts, no downloads, works on phones. Free.
 - Kind of project: **HTML**
 - Check: **This file will be played in the browser**
 - Embed: 460 × 800, or Fullscreen; **Mobile friendly** ✓
-- Genre: Puzzle · Tags: word-game, puzzle, daily, browser, mobile, customizable
+- Genre: Puzzle
+- Tags: `word-game`, `puzzle`, `sliding-puzzle`, `daily`, `vocabulary`, `browser`, `mobile`, `customizable`
+- **Languages: English, Russian** — this is its own metadata field on itch, not a
+  tag. It is what the language filter and search read, so a tag will not do.
 - Pricing: Free (donations optional)
 
 ## Notes
-- Cover image: store/cover.png (630×500).
+- Cover image: `store/cover.png` (630×500).
+- **Cover and screenshots are older than the redesign** (assets 2026-08-23, the
+  felt-table look landed 2026-08-26). They show the previous typeface, palette
+  and flat tiles, so the page currently advertises a game that no longer looks
+  like itself. Re-shoot both before the next push.
+  Worth capturing: the menu with the tile wordmark, a mid-game board with a
+  green row banking, the end card, and one in Russian.
