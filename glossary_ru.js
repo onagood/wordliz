@@ -32,6 +32,20 @@ const POS_NAME={noun:'сущ.',verb:'глаг.',adj:'прил.',adv:'нареч.
   intj:'межд.',pron:'мест.',num:'числ.',prep:'предл.',conj:'союз',particle:'част.'};
 const isFormOf=g=>/^форма\s/i.test(g);
 
+/* Proper nouns are tagged `noun` like everything else and the wiki lists «Волк»
+   (a surname) beside «волк» (the animal); lowercasing merges them, so on a plain
+   part-of-speech tie the entry that happened to come first in the dump won — which
+   is how «волк» ended up glossed as a given name and «кожа» as a river. Demote a
+   sense that reads like a proper noun so a common one outranks it, but keep it as
+   a last resort for words that only ever are one, like «берлин».
+   Note \b is ASCII-only in JS and never fires after a Cyrillic letter, so the end
+   of a Russian word is spelled out as "not another Cyrillic letter". */
+const stripLabels=g=>g.replace(/^(?:[а-яё]+\.\s*,?\s*)+/i,'');
+const PROPER_NAME=/^(?:[а-яё]+\s+){0,3}(?:имя|фамилия|отчество|прозвище)(?![а-яё])/i;
+const PROPER_PLACE=/^(?:город|посёлок|поселок|село|деревня|станица|хутор|столица|страна|государство|республика|река|речка|озеро|остров|полуостров|гора|хребет|вулкан|залив|пролив|штат|провинция|округ|район|уезд|волость|губерния|графство|коммуна|муниципалитет|префектура|департамент|кантон|созвездие|астероид|кратер|марка|бренд|компания|фирма|корпорация)(?![а-яё])/i;
+const isProper=g=>{const s=stripLabels(g);return PROPER_NAME.test(s)||PROPER_PLACE.test(s);};
+const PROPER_PENALTY=5;
+
 function clean(g){
   let s=g.replace(/\s+/g,' ').trim();
   if(!s) return null;
@@ -50,17 +64,29 @@ rl.on('line',line=>{
   const w=norm(m[1]);
   if(!isLemmaWord(w)) return;
   let e; try{e=JSON.parse(line);}catch(err){return;}
-  const rank=POS_RANK[e.pos]!==undefined?POS_RANK[e.pos]:9;
+  /* The wiki already separates «банда» the gang from «Банда» the sea, and «земля»
+     the soil from «Земля» the planet — by capitalising the headword. Lowercasing
+     merges the two, so carry the distinction over as a rank penalty instead: a
+     capitalised headword is a proper noun in Russian. This catches far more than
+     reading the definition text does, which stays as a second signal for entries
+     that are lowercase but still define a name. */
+  const capitalised=/^[А-ЯЁ]/.test(m[1]);
+  const base=(POS_RANK[e.pos]!==undefined?POS_RANK[e.pos]:9)+(capitalised?PROPER_PENALTY:0);
   const cur=lemma.get(w);
-  if(cur&&cur.rank<=rank) return;
+  if(cur&&cur.rank<base) return;          // even this entry's best can't win
+  const label=POS_NAME[e.pos];
+  /* pick the best sense inside this entry too — an entry often lists the place
+     or the name first and the everyday meaning second */
   for(const s of e.senses||[]){
     for(const g of s.glosses||[]){
       if(isFormOf(g)) continue;
       const cg=clean(g);
       if(!cg) continue;
-      const label=POS_NAME[e.pos];
+      const rank=base+(isProper(cg)?PROPER_PENALTY:0);
+      const now=lemma.get(w);
+      if(now&&now.rank<=rank) continue;
       lemma.set(w,{rank,text:(label?label+' ':'')+cg});
-      return;
+      if(rank===base&&!capitalised) return;  // a clean lowercase common sense: done
     }
   }
 });
