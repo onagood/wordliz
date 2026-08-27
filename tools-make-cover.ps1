@@ -84,34 +84,23 @@ for ($i = 0; $i -lt $letters.Count; $i++) {
 }
 
 # --- three rows, each parked at its own offset. Read down, the first two spell
-#     WORDPLAY and the third says how it moves. The rows are clipped to a window
-#     narrower than the canvas, so a neighbouring tile is cut off at each side:
-#     the line keeps going, which is what wrapping looks like. The words stay
-#     whole — that was the point, and the clip is what protects it. ---
+#     WORDPLAY and the third says how it moves; the offsets are what say the
+#     lines slide independently. ---
 $rows = @(
   @{ w = 'WORD'; face = $HIT;  deep = $HIT_DEEP;  ink = $HIT_INK;  dx = 46 },
   @{ w = 'PLAY'; face = $WARM; deep = $WARM_DEEP; ink = $WARM_INK; dx = -54 },
   @{ w = 'SLIP'; face = $TILE; deep = $TILE_BASE; ink = $INK;      dx = 14 }
 )
 $bs = 172; $bgap = 16
-$clipX = 150; $clipW = 960
-$wordX = $clipX + ($clipW - (4 * $bs + 3 * $bgap)) / 2   # the 4-letter word, centred
-$clip = New-Object System.Drawing.RectangleF($clipX, 325, $clipW, 620)
-$g.SetClip($clip)
+$wordX = ($W - (4 * $bs + 3 * $bgap)) / 2
 for ($r = 0; $r -lt $rows.Count; $r++) {
   $row = $rows[$r]
   $chars = $row.w.ToCharArray()
   $y = 352 + $r * ($bs + 20)
-  # the tiles either side carry no letter: they say the line continues without
-  # spelling a second word over the first
-  foreach ($n in @(-1, 4)) {
-    Tile ($wordX + $row.dx + $n * ($bs + $bgap)) $y $bs $row.face $row.deep $row.ink '' 0
-  }
   for ($i = 0; $i -lt $chars.Count; $i++) {
     Tile ($wordX + $row.dx + $i * ($bs + $bgap)) $y $bs $row.face $row.deep $row.ink ([string]$chars[$i]) 0
   }
 }
-$g.ResetClip()
 
 $g.Dispose()
 $bmp.Save($out, [System.Drawing.Imaging.ImageFormat]::Png)
