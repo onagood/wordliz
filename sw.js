@@ -1,9 +1,9 @@
 /* Wordliz service worker: precache the game, then stale-while-revalidate —
    offline play works from the first visit, updates arrive one load later. */
-const CACHE='wordliz-v3';
+const CACHE='wordliz-v4';
 const ASSETS=['./','./index.html','./words_en.js','./gloss_en.js',
   './manifest.webmanifest','./icon-192.png','./icon-512.png',
-  './fonts/fredoka-latin.woff2','./fonts/fredoka-latin-ext.woff2',
+  './fonts/rubik-latin.woff2','./fonts/rubik-latin-ext.woff2','./fonts/rubik-cyrillic.woff2',
   './fonts/plexmono-600-latin.woff2'];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
