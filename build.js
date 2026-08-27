@@ -1,11 +1,13 @@
 // Builds Wordliz for every platform from a single source.
 //   node build.js
 // Output:
-//   dist/web/             — GitHub Pages / any static host (index.html + words_en.js)
-//   dist/wordliz-itch.zip — itch.io upload (index.html at archive root)
-//   dist/artifact.html    — self-contained file (dictionary inlined)
-// SDK platforms (CrazyGames, Poki, Devvit) will get their own targets here
-// once the Platform adapter lands.
+//   dist/web/                   — GitHub Pages / any static host (index.html + words_en.js)
+//   dist/wordliz-itch.zip       — itch.io upload (index.html at archive root)
+//   dist/wordliz-crazygames.zip — CrazyGames upload (index.html at archive root)
+//   dist/artifact.html          — self-contained file (dictionary inlined)
+// The folder targets hold identical files and differ in one stamped constant: HOME_URL,
+// the storefront the game offers when it is sharing from inside somebody's iframe.
+// Poki and Devvit need the SDK adapter before they can be targets here.
 const fs=require('fs');
 const path=require('path');
 const {execSync}=require('child_process');
@@ -20,32 +22,58 @@ const clean=d=>{fs.rmSync(d,{recursive:true,force:true});fs.mkdirSync(d,{recursi
 
 clean(DIST);
 
-// --- dist/web: files as-is (PWA files ride along; itch ignores them harmlessly).
-//     Every words_*.js / gloss_*.js is picked up automatically — adding a language
-//     needs no build changes. ---
+// Each target's storefront. The game cannot tell which portal is framing it, and handing
+// players on one portal a link to a rival is a review failure, not just a wrong URL — so
+// the build decides rather than the client. '' means the target is served from an address
+// worth sharing: use location instead.
+const ITCH='https://onagood.itch.io/wordliz';
+const HOME={
+  web:'',
+  itch:ITCH,
+  // TODO: confirm once the game is live — CrazyGames assigns the slug on submission.
+  crazygames:'https://www.crazygames.com/game/wordliz',
+  // an artifact is a framed copy whose own URL is not a game address
+  artifact:ITCH,
+};
+
+// --- folder targets: files as-is (the PWA files ride along; portals ignore them
+//     harmlessly). Every words_*.js / gloss_*.js is picked up automatically — adding
+//     a language needs no build changes. ---
 const LANG_FILES=fs.readdirSync(ROOT).filter(f=>/^(words|gloss)_[a-z]+\.js$/.test(f));
-const WEB=path.join(DIST,'web');
-fs.mkdirSync(WEB,{recursive:true});
-for(const f of ['manifest.webmanifest','sw.js','icon.svg','icon-192.png','icon-512.png',...LANG_FILES])
-  fs.copyFileSync(path.join(ROOT,f),path.join(WEB,f));
-// index.html is the one file that is not copied verbatim: the build date is
-// stamped into it, so the version shown on the stats screen can never be stale.
-// The source keeps 'dev' — running from the repo should say so.
-const STAMP=new Date().toISOString().slice(0,10);
-const stamp=h=>h.replace(/const VERSION='[^']*'/,`const VERSION='${STAMP}'`);
-fs.writeFileSync(path.join(WEB,'index.html'),stamp(read('index.html')));
-// fonts ride along verbatim: the client loads them by relative path
+const ASSETS=['manifest.webmanifest','sw.js','icon.svg','icon-192.png','icon-512.png',...LANG_FILES];
 const FONT_DIR=path.join(ROOT,'fonts');
 const FONTS=fs.readdirSync(FONT_DIR);
-fs.mkdirSync(path.join(WEB,'fonts'),{recursive:true});
-for(const f of FONTS) fs.copyFileSync(path.join(FONT_DIR,f),path.join(WEB,'fonts',f));
 
-// --- dist/wordliz-itch.zip: same files, index.html at archive root ---
-const zipPath=path.join(DIST,'wordliz-itch.zip');
-execSync(`powershell -NoProfile -Command "Compress-Archive -Path '${WEB.replace(/\\/g,'/')}/*' -DestinationPath '${zipPath.replace(/\\/g,'/')}' -Force"`);
+// index.html is the one file that is not copied verbatim: the build date is stamped
+// into it, so the version shown on the stats screen can never be stale, and HOME_URL
+// with it. The source keeps 'dev' and an empty home — running from the repo should say so.
+const STAMP=new Date().toISOString().slice(0,10);
+const stamp=(h,home)=>h
+  .replace(/const VERSION='[^']*'/,`const VERSION='${STAMP}'`)
+  .replace(/const HOME_URL='[^']*'/,`const HOME_URL='${home}'`);
+
+function target(name,home){
+  const dir=path.join(DIST,name);
+  fs.mkdirSync(path.join(dir,'fonts'),{recursive:true});
+  for(const f of ASSETS) fs.copyFileSync(path.join(ROOT,f),path.join(dir,f));
+  // fonts ride along verbatim: the client loads them by relative path
+  for(const f of FONTS) fs.copyFileSync(path.join(FONT_DIR,f),path.join(dir,'fonts',f));
+  fs.writeFileSync(path.join(dir,'index.html'),stamp(read('index.html'),home));
+  return dir;
+}
+// both portals want a flat archive with index.html at the root
+const zip=(dir,name)=>{
+  const out=path.join(DIST,name);
+  execSync(`powershell -NoProfile -Command "Compress-Archive -Path '${dir.replace(/\\/g,'/')}/*' -DestinationPath '${out.replace(/\\/g,'/')}' -Force"`);
+  return out;
+};
+
+const WEB=target('web',HOME.web);
+const ITCH_ZIP=zip(target('itch',HOME.itch),'wordliz-itch.zip');
+const CG_ZIP=zip(target('crazygames',HOME.crazygames),'wordliz-crazygames.zip');
 
 // --- dist/artifact.html: single file with the dictionary and glossary inlined ---
-let html=stamp(read('index.html'));
+let html=stamp(read('index.html'),HOME.artifact);
 html=html.replace(/^<!doctype html>\s*/i,'');
 html=html.replace(/<html lang="en">\s*/,'');
 html=html.replace(/<\/?head>\s*/g,'');
@@ -70,6 +98,7 @@ html=html.replace('<style>',
 fs.writeFileSync(path.join(DIST,'artifact.html'),html);
 
 const size=f=>Math.round(fs.statSync(f).size/1024)+' KB';
-console.log('web:      dist/web/ ('+size(path.join(WEB,'index.html'))+' + '+size(path.join(WEB,DICT))+' + '+size(path.join(WEB,GLOSS))+')');
-console.log('itch:     dist/wordliz-itch.zip ('+size(zipPath)+')');
-console.log('artifact: dist/artifact.html ('+size(path.join(DIST,'artifact.html'))+')');
+console.log('web:        dist/web/ ('+size(path.join(WEB,'index.html'))+' + '+size(path.join(WEB,DICT))+' + '+size(path.join(WEB,GLOSS))+')');
+console.log('itch:       dist/wordliz-itch.zip ('+size(ITCH_ZIP)+')');
+console.log('crazygames: dist/wordliz-crazygames.zip ('+size(CG_ZIP)+')');
+console.log('artifact:   dist/artifact.html ('+size(path.join(DIST,'artifact.html'))+')');
