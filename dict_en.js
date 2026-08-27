@@ -38,7 +38,12 @@ const isWord=w=>/^[a-z]{4,6}$/.test(w);
 const ROOT_DICT=['fuck','shit','cunt','twat','whore','slut','kike','chink','faggot',
   'fags','retard','dyke','jizz','jism','rapist','anus','pube','bollock','bugger',
   'tosser','felch','smegma','dildo','boner','bitch','prick','pussy','titty','incest',
-  'orgasm','sodomy','douche','porno','merde','gook','dago','piss','nigger','nigga'];
+  'orgasm','sodomy','douche','porno','merde','gook','dago','piss','nigger','nigga',
+  // second pass: anatomy, drugs and slurs the first list never covered. The game
+  // prints a definition for every red word it flags, so these would be put on
+  // screen by the game itself, not merely tolerated in a list.
+  'penis','vagina','semen','sperm','nipple','porn','molest','hooker','heroin',
+  'opium','queer','kraut','gypsy','nazi','pedo','brothel'];
 //      Stems that hide inside perfectly ordinary words have to be matched as whole
 //      forms instead: spic→spice, wank→swanky, coon→tycoon, turd→sturdy,
 //      horny→thorny, shag→shaggy, anal→analog, arse→coarse, crap→scrape,
@@ -47,7 +52,9 @@ const WORD_DICT=new Set(['ass','asses','arse','arses','anal','crap','craps','cra
   'dick','dicks','dong','dongs','fart','farts','farted','frig','frigs','cock','cocks',
   'homo','homos','rape','raped','rapes','raper','rapers','tits','erotic','shat',
   'nance','nances','spic','spics','wank','wanks','wanker','coon','coons','shag','shags',
-  'turd','turds','horny','boob','boobs','honky','honkey']);
+  'turd','turds','horny','boob','boobs','honky','honkey',
+  // pimp→pimple, meth→method, orgy→porgy
+  'pimp','pimps','meth','meths','orgy','orgies','jap','japs','paki','pakis','wog','wogs']);
 const crude=w=>ROOT_DICT.some(r=>w.includes(r))||WORD_DICT.has(w);
 
 // ---- load ENABLE ----

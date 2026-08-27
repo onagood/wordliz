@@ -28,6 +28,12 @@ node build.js
 - **CrazyGames / Poki** — zip upload in the developer portal (requires their SDK — will land in `build.js` as a separate target);
 - **Devvit (Reddit)** — separate port: webview client + Redis saves, `devvit upload`.
 
+## Licensing
+
+The game bundles third-party fonts and dictionary data. Everything it ships,
+with its terms and copyright lines, is listed in [THIRD-PARTY.md](THIRD-PARTY.md).
+Note that `gloss_ru.js` is CC BY-SA 4.0, inherited from the Russian Wiktionary.
+
 ## Dictionaries
 
 `words_en.js` holds two lists per board size (4/5/6), each packed into one string:
