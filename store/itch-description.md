@@ -63,10 +63,11 @@ No accounts, no downloads, works on phones. Free.
 - Pricing: Free (donations optional)
 
 ## Notes
-- Cover image: `store/cover.png` (630×500).
-- **Cover and screenshots are older than the redesign** (assets 2026-08-23, the
-  felt-table look landed 2026-08-26). They show the previous typeface, palette
-  and flat tiles, so the page currently advertises a game that no longer looks
-  like itself. Re-shoot both before the next push.
+- Cover image: `store/cover.png`, 1260×1000 (twice itch's 630×500, so it stays
+  sharp). Redrawn for the felt-table look — regenerate with
+  `powershell -File tools-make-cover.ps1 -Ttf <Rubik[wght].ttf>`.
+- **Screenshots are still older than the redesign** (2026-08-23, the felt-table
+  look landed 2026-08-26). They show the previous typeface, palette and flat
+  tiles, so the page still shows a game that no longer looks like itself.
   Worth capturing: the menu with the tile wordmark, a mid-game board with a
   green row banking, the end card, and one in Russian.
