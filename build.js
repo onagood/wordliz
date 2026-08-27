@@ -26,8 +26,14 @@ clean(DIST);
 const LANG_FILES=fs.readdirSync(ROOT).filter(f=>/^(words|gloss)_[a-z]+\.js$/.test(f));
 const WEB=path.join(DIST,'web');
 fs.mkdirSync(WEB,{recursive:true});
-for(const f of ['index.html','manifest.webmanifest','sw.js','icon-192.png','icon-512.png',...LANG_FILES])
+for(const f of ['manifest.webmanifest','sw.js','icon-192.png','icon-512.png',...LANG_FILES])
   fs.copyFileSync(path.join(ROOT,f),path.join(WEB,f));
+// index.html is the one file that is not copied verbatim: the build date is
+// stamped into it, so the version shown on the stats screen can never be stale.
+// The source keeps 'dev' — running from the repo should say so.
+const STAMP=new Date().toISOString().slice(0,10);
+const stamp=h=>h.replace(/const VERSION='[^']*'/,`const VERSION='${STAMP}'`);
+fs.writeFileSync(path.join(WEB,'index.html'),stamp(read('index.html')));
 // fonts ride along verbatim: the client loads them by relative path
 const FONT_DIR=path.join(ROOT,'fonts');
 const FONTS=fs.readdirSync(FONT_DIR);
@@ -39,7 +45,7 @@ const zipPath=path.join(DIST,'wordliz-itch.zip');
 execSync(`powershell -NoProfile -Command "Compress-Archive -Path '${WEB.replace(/\\/g,'/')}/*' -DestinationPath '${zipPath.replace(/\\/g,'/')}' -Force"`);
 
 // --- dist/artifact.html: single file with the dictionary and glossary inlined ---
-let html=read('index.html');
+let html=stamp(read('index.html'));
 html=html.replace(/^<!doctype html>\s*/i,'');
 html=html.replace(/<html lang="en">\s*/,'');
 html=html.replace(/<\/?head>\s*/g,'');
