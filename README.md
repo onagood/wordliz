@@ -32,8 +32,14 @@ node build.js
 
 `words_en.js` holds two lists per board size (4/5/6), each packed into one string:
 `s` (seeds) — curated common words the hidden targets are drawn from;
-`d` (dict) — validation for “red” words, based on the public-domain ENABLE list
-with a profanity/slur blocklist applied.
+`d` (dict) — validation for “red” words. Rebuilt with `node dict_en.js <dir>`:
+the public-domain [ENABLE list](https://github.com/dolph/dictionary) narrowed to
+words that also rank in the top 40 000 of an
+[OpenSubtitles frequency list](https://github.com/hermitdave/FrequencyWords) (MIT),
+with an obscenity and slur blocklist applied. Below that rank the list starts
+admitting acronyms and fragments nobody recognises as words. The builder reads
+`s` back out of the existing file and passes it through untouched, so rebuilding
+`d` never disturbs board codes.
 
 More languages follow the same shape: `words_ru.js` etc.
 
