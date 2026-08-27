@@ -26,7 +26,7 @@ clean(DIST);
 const LANG_FILES=fs.readdirSync(ROOT).filter(f=>/^(words|gloss)_[a-z]+\.js$/.test(f));
 const WEB=path.join(DIST,'web');
 fs.mkdirSync(WEB,{recursive:true});
-for(const f of ['manifest.webmanifest','sw.js','icon-192.png','icon-512.png',...LANG_FILES])
+for(const f of ['manifest.webmanifest','sw.js','icon.svg','icon-192.png','icon-512.png',...LANG_FILES])
   fs.copyFileSync(path.join(ROOT,f),path.join(WEB,f));
 // index.html is the one file that is not copied verbatim: the build date is
 // stamped into it, so the version shown on the stats screen can never be stale.
