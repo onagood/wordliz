@@ -3,7 +3,7 @@
 // Output:
 //   dist/web/                   — GitHub Pages / any static host (index.html + words_en.js)
 //   dist/wordliz-itch.zip       — itch.io upload (index.html at archive root)
-//   dist/wordliz-crazygames.zip — CrazyGames upload (index.html at archive root)
+//   dist/crazygames/            — CrazyGames upload (its portal takes the folder)
 //   dist/artifact.html          — self-contained file (dictionary inlined)
 // The folder targets hold identical files and differ in one stamped constant: HOME_URL,
 // the storefront the game offers when it is sharing from inside somebody's iframe.
@@ -70,7 +70,8 @@ const zip=(dir,name)=>{
 
 const WEB=target('web',HOME.web);
 const ITCH_ZIP=zip(target('itch',HOME.itch),'wordliz-itch.zip');
-const CG_ZIP=zip(target('crazygames',HOME.crazygames),'wordliz-crazygames.zip');
+// CrazyGames' portal takes the folder itself, so this one stops at the directory
+const CG=target('crazygames',HOME.crazygames);
 
 // --- dist/artifact.html: single file with the dictionary and glossary inlined ---
 let html=stamp(read('index.html'),HOME.artifact);
@@ -100,5 +101,5 @@ fs.writeFileSync(path.join(DIST,'artifact.html'),html);
 const size=f=>Math.round(fs.statSync(f).size/1024)+' KB';
 console.log('web:        dist/web/ ('+size(path.join(WEB,'index.html'))+' + '+size(path.join(WEB,DICT))+' + '+size(path.join(WEB,GLOSS))+')');
 console.log('itch:       dist/wordliz-itch.zip ('+size(ITCH_ZIP)+')');
-console.log('crazygames: dist/wordliz-crazygames.zip ('+size(CG_ZIP)+')');
+console.log('crazygames: dist/crazygames/ ('+size(path.join(CG,'index.html'))+' + assets)');
 console.log('artifact:   dist/artifact.html ('+size(path.join(DIST,'artifact.html'))+')');
