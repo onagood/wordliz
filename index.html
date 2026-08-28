@@ -1081,10 +1081,23 @@ function layout(){
   if(!grid.length) return;
   const rig=boardEl.closest('.rig');
   const contW=(rig.parentElement&&rig.parentElement.clientWidth)||360;
+  // the nudge bars flank the board on all four sides, so they cost the same
+  // 2*(26+6) in both directions — charging it to width only let the board grow
+  // past the viewport on short screens, and the page scrolled
   const barsOn=el('rowLeft').offsetParent!==null;
-  const maxW=Math.max(180,contW-(barsOn?2*(26+6):0));
+  const bars=barsOn?2*(26+6):0;
+  const maxW=Math.max(180,contW-bars);
   const top=rig.getBoundingClientRect().top;
-  const availH=Math.max(180,(window.innerHeight||600)-top-96);
+  // everything under the board is fixed-height and does not depend on the board,
+  // so measure it rather than guess: the old constant under-counted the action bar
+  // and the hint line, and it could not know when the hint is hidden outright
+  let below=parseFloat(getComputedStyle(rig.closest('.app')).paddingBottom)||16;
+  for(let n=rig.nextElementSibling;n;n=n.nextElementSibling){
+    const cs=getComputedStyle(n);
+    below+=n.getBoundingClientRect().height
+      +(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0);
+  }
+  const availH=Math.max(180,(window.innerHeight||600)-top-below-bars);
   const bw=Math.max(180,Math.min(maxW, availH*N/grid.length));
   rig.style.setProperty('--bw',bw+'px');
   const w=bw; step=w/N; const size=step-gap;
