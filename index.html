@@ -2010,11 +2010,15 @@ window.addEventListener('resize',layout);
    they wrap — the board has to give those pixels back, or the page outgrows the frame
    a portal gives it: a scrollbar on desktop, a clipped top row on a phone */
 if(window.ResizeObserver){
+  /* debounced on a timer, not on a frame: requestAnimationFrame does not run while the
+     page is not being painted — a backgrounded tab, or a portal's iframe scrolled out of
+     view — and the board would then keep a stale size and a stale scroll lock for as long
+     as that lasted. Timers still fire there, throttled, which is exactly enough. */
   let pending=false;
   const ro=new ResizeObserver(()=>{
     if(pending) return;
     pending=true;
-    requestAnimationFrame(()=>{pending=false;layout();});
+    setTimeout(()=>{pending=false;layout();},0);
   });
   for(const n of [el('tgt'),el('hint'),document.querySelector('#scGame .bar'),
                   document.querySelector('#scGame .actbar')]) if(n) ro.observe(n);
