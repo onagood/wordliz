@@ -35,7 +35,7 @@ const ITCH='https://onagood.itch.io/wordliz';
 const TARGETS={
   web:  {home:'',   portal:null},
   itch: {home:ITCH, portal:null},
-  // TODO: confirm once the game is live — CrazyGames assigns the slug on submission.
+  // confirmed 2026-08-31 against the rel=canonical their own game-files page carries
   crazygames:{home:'https://www.crazygames.com/game/wordliz', portal:'crazygames'},
   // Poki hands out the slug at release; until then there is no Poki address to share, and
   // the test link must not travel (T&C 3.3), so this build shares wherever it is served.

@@ -1118,7 +1118,15 @@ function build(){
   layout();
 }
 function layout(){
-  if(!grid.length) return;
+  /* Off the board this function has nothing to measure — the board's whole column is
+     display:none and every rect reads zero — and no business deciding anything: the menu
+     and the rules run longer than most frames and must stay scrollable. It still runs
+     there, because hiding the game screen resizes the very elements the observer watches,
+     so it owns the scroll flag in both directions rather than reading stale numbers. */
+  if(!el('scGame').classList.contains('on')||!grid.length){
+    document.documentElement.style.overflowY='';
+    return;
+  }
   const rig=boardEl.closest('.rig');
   const contW=(rig.parentElement&&rig.parentElement.clientWidth)||360;
   // the nudge bars flank the board on all four sides, so they cost the same
@@ -1329,9 +1337,7 @@ function skipTutorial(){
 el('bSkip').onclick=()=>{ if(tut) skipTutorial(); };
 /* ---------- screens ---------- */
 function show(id){['scMenu','scGame','scRules','scStats'].forEach(s=>el(s).classList.toggle('on',s===id));hideFlash();
-  /* only the board earns a page that cannot scroll, and only layout() can tell whether
-     it fits — so hand the flag back on the way out and let layout() re-take it on return */
-  if(id!=='scGame') document.documentElement.style.overflowY=''; else layout();}
+  layout();}   /* the scroll flag belongs to layout(), which now knows where we are */
 function histHtml(){
   const H=career.hist||{}; let out='';
   for(const n of [4,5,6]){
