@@ -4,10 +4,11 @@
 //   dist/web/                   — GitHub Pages / any static host (index.html + words_en.js)
 //   dist/wordliz-itch.zip       — itch.io upload (index.html at archive root)
 //   dist/crazygames/            — CrazyGames upload (its portal takes the folder)
-//   dist/artifact.html          — self-contained file (dictionary inlined)
-// The folder targets hold identical files and differ in one stamped constant: HOME_URL,
-// the storefront the game offers when it is sharing from inside somebody's iframe.
-// Poki and Devvit need the SDK adapter before they can be targets here.
+//   dist/wordliz-poki.zip       — Poki upload (its portal takes an archive)
+// The folder targets hold identical files and differ by two stamped things: HOME_URL,
+// the storefront the game offers when it is sharing from inside somebody's iframe, and
+// the portal SDK, which only that portal's own build may carry.
+// Devvit still needs its own adapter before it can be a target here.
 const fs=require('fs');
 const path=require('path');
 const {execSync}=require('child_process');
@@ -27,14 +28,30 @@ clean(DIST);
 // the build decides rather than the client. '' means the target is served from an address
 // worth sharing: use location instead.
 const ITCH='https://onagood.itch.io/wordliz';
-const HOME={
-  web:'',
-  itch:ITCH,
+// One row per target, and `portal` is the whole classification: somebody else's storefront,
+// or ours. It lives in a single table on purpose — two tables can fall out of step, and a
+// target present in one but missing from the other is exactly the slip that ships a rival's
+// address into a portal that rejects such links.
+const TARGETS={
+  web:  {home:'',   portal:null},
+  itch: {home:ITCH, portal:null},
   // TODO: confirm once the game is live — CrazyGames assigns the slug on submission.
-  crazygames:'https://www.crazygames.com/game/wordliz',
-  // an artifact is a framed copy whose own URL is not a game address
-  artifact:ITCH,
+  crazygames:{home:'https://www.crazygames.com/game/wordliz', portal:'crazygames'},
+  // Poki hands out the slug at release; until then there is no Poki address to share, and
+  // the test link must not travel (T&C 3.3), so this build shares wherever it is served.
+  poki: {home:'',   portal:'poki'},
 };
+// The SDK each portal's own build carries, and nobody else's.
+const SDK={
+  crazygames:'',    // no SDK yet — Basic Launch does not require one
+  poki:'<script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>\n'+
+       '<script>window.__portalReady=window.PokiSDK?PokiSDK.init():null;'+
+       'window.__portalReady&&window.__portalReady.catch(function(){});</script>',
+};
+// Where each portal's SDK must come from. Written out again, apart from the snippet above,
+// because a check that reads the same line it is checking is not a check — this is the copy
+// that would still disagree if the snippet above were pasted from the wrong portal's docs.
+const SDK_HOST={ crazygames:null, poki:'game-cdn.poki.com' };
 
 // --- folder targets: files as-is (the PWA files ride along; portals ignore them
 //     harmlessly). Every words_*.js / gloss_*.js is picked up automatically — adding
@@ -48,62 +65,90 @@ const FONTS=fs.readdirSync(FONT_DIR);
 // into it, so the version shown on the stats screen can never be stale, and HOME_URL
 // with it. The source keeps 'dev' and an empty home — running from the repo should say so.
 const STAMP=new Date().toISOString().slice(0,10);
-// a build with its own home never reads ITCH_URL — shareUrl() short-circuits on HOME_URL.
-// Blank it anyway: a rival portal's address sitting in a file a reviewer can read is a
-// question nobody needs asked, and CrazyGames rejects links to competing portals.
-const stamp=(h,home)=>h
-  .replace(/const VERSION='[^']*'/,`const VERSION='${STAMP}'`)
-  .replace(/const HOME_URL='[^']*'/,`const HOME_URL='${home}'`)
-  .replace(/const ITCH_URL='[^']*'/,home?`const ITCH_URL=''`:`$&`);
+// A portal build never reads ITCH_URL — shareUrl() short-circuits on HOME_URL, and Poki's
+// build has neither. Blank it there anyway: a rival portal's address sitting in a file a
+// reviewer can read is a question nobody needs asked, and portals reject such links.
+const stamp=(h,name)=>{
+  const t=TARGETS[name];
+  h=h.replace(/const VERSION='[^']*'/,`const VERSION='${STAMP}'`)
+     .replace(/const HOME_URL='[^']*'/,`const HOME_URL='${t.home}'`);
+  if(t.portal) h=h.replace(/const ITCH_URL='[^']*'/,`const ITCH_URL=''`);
+  // the SDK goes in <head>, ahead of the game, so its init is in flight before Portal
+  // asks anything of it
+  if(t.portal&&SDK[t.portal]) h=h.replace('</head>',SDK[t.portal]+'\n</head>');
+  return h;
+};
 
-function target(name,home){
+function target(name){
+  // an unclassified target cannot be built: that is what keeps the table exhaustive
+  if(!TARGETS[name]) throw new Error(`build: target '${name}' has no row in TARGETS`);
   const dir=path.join(DIST,name);
   fs.mkdirSync(path.join(dir,'fonts'),{recursive:true});
   for(const f of ASSETS) fs.copyFileSync(path.join(ROOT,f),path.join(dir,f));
   // fonts ride along verbatim: the client loads them by relative path
   for(const f of FONTS) fs.copyFileSync(path.join(FONT_DIR,f),path.join(dir,'fonts',f));
-  fs.writeFileSync(path.join(dir,'index.html'),stamp(read('index.html'),home));
+  fs.writeFileSync(path.join(dir,'index.html'),stamp(read('index.html'),name));
   return dir;
 }
-// both portals want a flat archive with index.html at the root
+// itch and Poki both want a flat archive with index.html at the root
 const zip=(dir,name)=>{
   const out=path.join(DIST,name);
   execSync(`powershell -NoProfile -Command "Compress-Archive -Path '${dir.replace(/\\/g,'/')}/*' -DestinationPath '${out.replace(/\\/g,'/')}' -Force"`);
   return out;
 };
 
-const WEB=target('web',HOME.web);
-const ITCH_ZIP=zip(target('itch',HOME.itch),'wordliz-itch.zip');
+const WEB=target('web');
+const ITCH_ZIP=zip(target('itch'),'wordliz-itch.zip');
 // CrazyGames' portal takes the folder itself, so this one stops at the directory
-const CG=target('crazygames',HOME.crazygames);
+const CG=target('crazygames');
+// Poki's takes an archive
+const POKI_ZIP=zip(target('poki'),'wordliz-poki.zip');
 
-// --- dist/artifact.html: single file with the dictionary and glossary inlined ---
-let html=stamp(read('index.html'),HOME.artifact);
-html=html.replace(/^<!doctype html>\s*/i,'');
-html=html.replace(/<html lang="en">\s*/,'');
-html=html.replace(/<\/?head>\s*/g,'');
-html=html.replace(/<\/?body>\s*/g,'');
-html=html.replace(/<\/html>\s*$/,'');
-for(const f of [DICT,GLOSS])
-  html=html.replace(`<script src="${f}"></script>`,'<script>'+read(f).trim()+'</'+'script>');
-// one file means one file: the woff2s become data: URIs too
-for(const f of FONTS.filter(x=>x.endsWith('.woff2'))){
-  const b64=fs.readFileSync(path.join(FONT_DIR,f)).toString('base64');
-  html=html.split(`url(fonts/${f})`).join(`url(data:font/woff2;base64,${b64})`);
+/* --- guard: check what landed on disk against what the stamping promised.
+   These rules used to live in whoever was paying attention: one target added without its
+   PORTALS entry and a rival's address ships to a portal that rejects links to rivals, or
+   two portals' SDKs end up in one file. A failed build is a cheaper way to find that out
+   than a rejected submission.
+   Only index.html is scanned — it is the file the stamping rewrites and the one a reviewer
+   reads. The dictionaries carry attribution URLs their licences require, and those are
+   nobody's storefront. */
+const host=u=>{try{return new URL(u).host;}catch(e){return null;}};
+// The hosts that are ours. This is the guard's own idea of who we are, and it is what lets
+// it disagree with the table: a target whose home is somebody else's address is a portal
+// whatever the row claims, and a target sitting on our own address is not.
+const OUR_HOSTS=new Set(['onagood.itch.io','onagood.github.io']);
+
+function verify(name,dir){
+  const t=TARGETS[name];
+  const html=fs.readFileSync(path.join(dir,'index.html'),'utf8');
+  const fail=why=>{throw new Error(`build: dist/${name}/index.html ${why}`);};
+  // classification and destination have to agree before anything else is worth checking
+  const homeHost=host(t.home);
+  if(homeHost&&!OUR_HOSTS.has(homeHost)&&!t.portal)
+    fail(`points at ${homeHost}, which is not ours, but is not marked as a portal`);
+  if(homeHost&&OUR_HOSTS.has(homeHost)&&t.portal)
+    fail(`is marked as the portal '${t.portal}' but points at our own ${homeHost}`);
+  const urls=[...new Set(html.match(/https?:\/\/[^"'\s)<]+/g)||[])];
+  // hosts this build is allowed to name: its own destination, its own portal's SDK, and —
+  // only when the build is not standing in somebody else's shop — our own storefront
+  const ok=new Set([host(t.home),t.portal?SDK_HOST[t.portal]:null].filter(Boolean));
+  if(!t.portal) ok.add(host(ITCH));
+  const bad=urls.filter(u=>!ok.has(host(u)));
+  if(bad.length) fail('names a host that is not its own: '+bad.join(', '));
+
+  if(!t.portal) return;
+  if(!/const ITCH_URL=''/.test(html)) fail('is a portal build but kept ITCH_URL');
+  const wanted=SDK_HOST[t.portal];
+  const scripts=(html.match(/<script src="(https?:\/\/[^"]+)"/g)||[])
+    .map(s=>host(s.slice(14)));
+  if(wanted && scripts.filter(h=>h===wanted).length!==1)
+    fail(`should load its SDK from ${wanted} exactly once, found ${scripts.length} remote script(s)`);
+  if(!wanted && scripts.length) fail('expects no SDK yet but loads '+scripts.join(', '));
 }
-// The OFL requires every copy carrying the font to carry the licence with it.
-// This target has no fonts/ folder to hold one, so it rides in an HTML comment.
-// Hyphen pairs in the licence text would close that comment early, hence the split.
-const LICENCES=FONTS.filter(f=>/OFL\.txt$/i.test(f))
-  .map(f=>`\n===== ${f} =====\n`+read(path.join('fonts',f)).replace(/--/g,'- -'))
-  .join('\n');
-html=html.replace('<style>',
-  '<!--\nEmbedded fonts are licensed under the SIL Open Font License 1.1.\n'+
-  LICENCES+'\n-->\n<style>');
-fs.writeFileSync(path.join(DIST,'artifact.html'),html);
+for(const name of Object.keys(TARGETS)) verify(name,path.join(DIST,name));
 
 const size=f=>Math.round(fs.statSync(f).size/1024)+' KB';
 console.log('web:        dist/web/ ('+size(path.join(WEB,'index.html'))+' + '+size(path.join(WEB,DICT))+' + '+size(path.join(WEB,GLOSS))+')');
 console.log('itch:       dist/wordliz-itch.zip ('+size(ITCH_ZIP)+')');
 console.log('crazygames: dist/crazygames/ ('+size(path.join(CG,'index.html'))+' + assets)');
-console.log('artifact:   dist/artifact.html ('+size(path.join(DIST,'artifact.html'))+')');
+console.log('poki:       dist/wordliz-poki.zip ('+size(POKI_ZIP)+')');

@@ -12,8 +12,8 @@ actually reach a player's browser.
 **IBM Plex Mono** — © 2017 IBM Corp., with Reserved Font Name "Plex"
 
 Both under the SIL Open Font License 1.1. Full licence texts ship alongside the
-fonts as `Rubik-OFL.txt` and `IBMPlexMono-OFL.txt`, and are embedded in
-`dist/artifact.html`, which inlines the font files themselves.
+fonts as `Rubik-OFL.txt` and `IBMPlexMono-OFL.txt` — every build copies the whole
+`fonts/` folder, so the licences travel with the font files in all of them.
 
 ---
 

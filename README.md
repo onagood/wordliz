@@ -18,14 +18,20 @@ node build.js
 |---|---|
 | `dist/web/` | GitHub Pages / any static host |
 | `dist/wordliz-itch.zip` | itch.io (index.html at archive root) |
-| `dist/artifact.html` | self-contained single file, dictionary and glossary inlined |
+| `dist/crazygames/` | CrazyGames (its portal takes the folder) |
+| `dist/wordliz-poki.zip` | Poki (index.html at archive root, PokiSDK in `<head>`) |
 
 ## Shipping updates
 
 - **GitHub Pages** — `git push` (Pages serves the repo root on `main`);
 - **itch.io** — `butler push dist/wordliz-itch.zip <user>/wordliz:html`, or upload manually.
   Page settings: *This file will be played in the browser*, viewport 460×800 or fullscreen, *Mobile friendly* checked;
-- **CrazyGames / Poki** — zip upload in the developer portal (requires their SDK — will land in `build.js` as a separate target);
+- **CrazyGames** — upload the `dist/crazygames/` folder in the developer portal; updates to a
+  game in Basic Launch go live instantly. No SDK yet: Basic Launch does not ask for one, Full
+  Launch will;
+- **Poki** — upload `dist/wordliz-poki.zip` in Poki for Developers, then request a playtest.
+  Only the build carries PokiSDK; the lifecycle calls live in `index.html` behind `Portal`,
+  which no-ops wherever no portal SDK is present;
 - **Devvit (Reddit)** — separate port: webview client + Redis saves, `devvit upload`.
 
 ## Licensing
