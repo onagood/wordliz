@@ -675,6 +675,29 @@ const CONT_COST=100, CONT_TIME=20, HINT_COST=30;
 const defOf=w=>GLOSS[w.toLowerCase()]||null;
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+/* Portals want to know when the player is actually playing, so their ad breaks and their
+   engagement numbers land between rounds rather than mid-move. Every call is a no-op
+   unless a portal SDK is present — the build injects one only into that portal's target,
+   so this costs the other builds nothing but the closure.
+   play/stop are idempotent: the game reaches them from several directions (a win, a pause,
+   quitting to the menu) and a portal counts a doubled event as a doubled session. */
+const Portal=(()=>{
+  const sdk=()=>window.PokiSDK;
+  // the SDK's own init promise, parked on window by the injected snippet; without it
+  // (every non-portal build) the work simply runs now
+  const when=f=>{const p=window.__portalReady;
+    if(p&&p.then) p.then(f).catch(()=>{}); else f();};
+  const call=name=>when(()=>{try{const s=sdk(); s&&s[name]&&s[name]();}catch(e){}});
+  let playing=false, loaded=false;
+  return {
+    loadingFinished(){ if(loaded) return; loaded=true; call('gameLoadingFinished'); },
+    /* a fresh board is a fresh session, so a play() over a running one closes it first —
+       "Play again" goes straight from one board to the next without passing the menu */
+    play(){ if(playing) call('gameplayStop'); playing=true; call('gameplayStart'); },
+    stop(){ if(!playing) return; playing=false; call('gameplayStop'); },
+  };
+})();
+
 /* Android: Vibration API. iOS: checkbox-switch hack (Safari 17.4+, silently dead since 26.5). */
 const Haptics=(()=>{
   const canVibe = typeof navigator!=='undefined' && 'vibrate' in navigator;
@@ -1012,9 +1035,9 @@ function bank(r){
 }
 function finish(win){
   if(done) return;
-  if(tut){ done='win'; stopClock(); Haptics.over(); Sfx.over(true); tutFinish(); return; }
+  if(tut){ done='win'; stopClock(); Portal.stop(); Haptics.over(); Sfx.over(true); tutFinish(); return; }
   done = win ? 'win' : ((mode==='hard'||(custom&&custom.t))?'timeup':'gave');
-  stopClock(); Haptics.over(); Sfx.over(win); career.deals++;
+  stopClock(); Portal.stop(); Haptics.over(); Sfx.over(win); career.deals++;
   const got=targets.filter(t=>t.done).map(t=>t.w);
   const set=new Set(career.collected||[]); got.forEach(w=>set.add(w));
   career.collected=[...set];
@@ -1116,14 +1139,19 @@ function layout(){
     below+=n.getBoundingClientRect().height
       +(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0);
   }
-  const availH=Math.max(180,(window.innerHeight||600)-top-below-bars);
+  // the room actually on offer, before the floor — the floor is what the board takes
+  // when there is not enough, and the two have to stay tellable apart
+  const roomH=(window.innerHeight||600)-top-below-bars;
+  const availH=Math.max(180,roomH);
   const bw=Math.max(180,Math.min(maxW, availH*N/grid.length));
   /* the board is sized to fill the viewport exactly, which leaves the browser in a
      stalemate: a scrollbar narrows the page, the narrower page then fits, and dropping
      the bar would overflow again — so it keeps a bar over a page that does not scroll.
-     Whenever the board did get the room it asked for, take the page out of that loop. */
+     Whenever the board did get the room it asked for, take the page out of that loop —
+     but measure against the real room, or a frame too short for even the smallest board
+     would be declared a fit and lose its bottom with no way to scroll to it. */
   document.documentElement.style.overflowY =
-    bw*grid.length/N <= availH+0.5 ? 'hidden' : '';
+    bw*grid.length/N <= roomH+0.5 ? 'hidden' : '';
   rig.style.setProperty('--bw',bw+'px');
   const w=bw; step=w/N; const size=step-gap;
   boardEl.style.height=(grid.length*step)+'px';
@@ -1272,7 +1300,7 @@ function startTutorial(){
   stopClock(); timeLeft=60; t0=0; tAcc=0; reds=0; foundReal.clear(); hideFlash();
   tut={step:1};
   build(); refresh();
-  requestAnimationFrame(()=>{layout(); tutStep();});
+  requestAnimationFrame(()=>{layout(); tutStep();}); Portal.play();
 }
 el('bTut').onclick=()=>startTutorial();
 /* tapping the wordmark drops a stone in it: the letter you hit bounces first
@@ -1413,6 +1441,7 @@ el('bWipe').onclick=()=>{
   save(); paintStats(); refresh();
 };
 function toMenu(){
+  Portal.stop();
   if(!done){stopClock(); career.deals++; save();}
   el('veil').classList.remove('on'); show('scMenu'); refresh();
 }
@@ -1426,7 +1455,7 @@ function start(m,s,daily,size){
   if(!lp.includes(gameLang)){ lp.push(gameLang); save(); checkAch(); }
   N = custom ? custom.l : (daily ? 5 : (size||size===0 ? size : N));
   mode=m; isDaily=!!daily; show('scGame'); el('veil').classList.remove('on');
-  deal(s); requestAnimationFrame(layout);
+  deal(s); requestAnimationFrame(layout); Portal.play();
 }
 function startCustom(cfg,s){ pendingCustom={...cfg}; start(cfg.m?'hard':'free',s,false,cfg.l); }
 /* an end-card title laid out in mini tiles; spaces break it into words */
@@ -1588,7 +1617,7 @@ function armCodeChips(root){
 }
 function showPause(){
   if(done) return;
-  paused=true; stopClock();
+  paused=true; stopClock(); Portal.stop();
   el('card').innerHTML=`<h2>`+T('Paused')+`</h2><p class="sub" style="margin-top:8px">`+
     T((mode==='hard'||(custom&&custom.t))?'The clock is stopped.':'Take your time.')+
     (tut?'':' '+T('Quitting counts the board as played.'))+`</p>`+
@@ -1606,7 +1635,7 @@ function showPause(){
     /* the clock resumes with the game: rush once its countdown has begun (first word),
        anything else once the first move was made */
     if(mode==='hard' ? found>0 : mv>0) startClock();
-    sweep();
+    Portal.play(); sweep();
   };
   el('bQuit').onclick=()=>{ paused=false; if(tut){skipTutorial();return;} toMenu(); };
   el('veil').classList.add('on');
@@ -2010,6 +2039,9 @@ async function load(){
 refresh(); load().then(()=>{
   if(!career.tutorialDone && !career.deals && !location.hash) setTimeout(startTutorial,120);
   checkAch();          // retroactive unlocks for careers built before achievements existed
+  /* the saved career is the last thing the first screen waits on, so this is the honest
+     moment to call the game loaded — it is what a portal measures conversion against */
+  Portal.loadingFinished();
 });
 /* PWA: install + offline, for direct hosting only — pointless inside the itch iframe */
 if('serviceWorker' in navigator && !EMBEDDED &&
