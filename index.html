@@ -275,7 +275,10 @@ b,strong{font-weight:600} /* the design tops out at 600; Rubik would go to 700 *
 .veil{position:fixed;inset:0;background:var(--veil);display:none;
   align-items:center;justify-content:center;padding:20px;z-index:10}
 .veil.on{display:flex}
+/* the card scrolls inside itself rather than overflowing: a portal's frame can be far
+   shorter than a phone's, and an end card taller than it would lose its buttons */
 .card{background:var(--ground);border-radius:24px;padding:26px 22px;width:100%;max-width:380px;
+  max-height:100%;overflow-y:auto;overscroll-behavior:contain;
   box-shadow:0 18px 50px rgba(40,25,8,.4)}
 .card h2{margin:0;font-size:1.1rem;font-weight:600}
 /* the end-card title, spelled out in mini tiles */
@@ -930,6 +933,19 @@ function replaceRow(r){
 }
 /* the word that just turned up, red or banked, shown as a floating card
    (position:fixed, out of the page flow, so it never resizes or scrolls the page) */
+/* a portal can hand the game an iframe taller than the phone's visible slice, and then
+   the bottom of our viewport sits under the browser's own toolbar — a card pinned there
+   is simply never seen. Park it under the hint line, next to the board the player is
+   already looking at, and only fall back to the viewport bottom off the game screen. */
+function placeFlash(){
+  const t=el('toast');
+  const anchor=el('scGame').classList.contains('on')?el('hint'):null;
+  if(!anchor||anchor.offsetParent===null){t.style.top='';t.style.bottom='';return;}
+  t.style.bottom='auto'; t.style.top='0px';
+  const h=t.getBoundingClientRect().height;
+  t.style.top=Math.max(8,Math.min(anchor.getBoundingClientRect().bottom+10,
+    (window.innerHeight||600)-h-12))+'px';
+}
 function setFlash(kind,w){
   const def=defOf(w), W=w.toUpperCase();
   const g=def?`<br><i class="gloss">${esc(def)}</i>`:'';
@@ -939,6 +955,7 @@ function setFlash(kind,w){
       +(custom?'':' '+T('<b>+1 point</b>'))+g
     : TF('<b style="color:var(--hit)">{0}</b> banked.',W)+g;
   t.classList.remove('front');
+  placeFlash();
   t.classList.add('on');
   clearTimeout(setFlash.t);
   setFlash.t=setTimeout(()=>t.classList.remove('on'),def?5000:2000);
@@ -1087,7 +1104,9 @@ function layout(){
   const barsOn=el('rowLeft').offsetParent!==null;
   const bars=barsOn?2*(26+6):0;
   const maxW=Math.max(180,contW-bars);
-  const top=rig.getBoundingClientRect().top;
+  // document-relative, not viewport-relative: inside a portal's iframe the page can
+  // be scrolled, and a viewport top would hand the board the scrolled-away pixels
+  const top=rig.getBoundingClientRect().top+(window.scrollY||window.pageYOffset||0);
   // everything under the board is fixed-height and does not depend on the board,
   // so measure it rather than guess: the old constant under-counted the action bar
   // and the hint line, and it could not know when the hint is hidden outright
@@ -1099,6 +1118,12 @@ function layout(){
   }
   const availH=Math.max(180,(window.innerHeight||600)-top-below-bars);
   const bw=Math.max(180,Math.min(maxW, availH*N/grid.length));
+  /* the board is sized to fill the viewport exactly, which leaves the browser in a
+     stalemate: a scrollbar narrows the page, the narrower page then fits, and dropping
+     the bar would overflow again — so it keeps a bar over a page that does not scroll.
+     Whenever the board did get the room it asked for, take the page out of that loop. */
+  document.documentElement.style.overflowY =
+    bw*grid.length/N <= availH+0.5 ? 'hidden' : '';
   rig.style.setProperty('--bw',bw+'px');
   const w=bw; step=w/N; const size=step-gap;
   boardEl.style.height=(grid.length*step)+'px';
@@ -1275,7 +1300,10 @@ function skipTutorial(){
 }
 el('bSkip').onclick=()=>{ if(tut) skipTutorial(); };
 /* ---------- screens ---------- */
-function show(id){['scMenu','scGame','scRules','scStats'].forEach(s=>el(s).classList.toggle('on',s===id));hideFlash();}
+function show(id){['scMenu','scGame','scRules','scStats'].forEach(s=>el(s).classList.toggle('on',s===id));hideFlash();
+  /* only the board earns a page that cannot scroll, and only layout() can tell whether
+     it fits — so hand the flag back on the way out and let layout() re-take it on return */
+  if(id!=='scGame') document.documentElement.style.overflowY=''; else layout();}
 function histHtml(){
   const H=career.hist||{}; let out='';
   for(const n of [4,5,6]){
@@ -1325,6 +1353,7 @@ const ACH=[
 function toastAch(names){
   const t=el('toast');
   t.innerHTML=`<b style="color:var(--hit)">`+T('Achievement unlocked')+`</b> — `+names.map(n=>T(n)).join(' · ');
+  placeFlash();
   t.classList.add('on','front');
   clearTimeout(setFlash.t);
   setFlash.t=setTimeout(()=>t.classList.remove('on','front'),3500);
@@ -1942,6 +1971,19 @@ boardEl.addEventListener('pointermove',e=>{
 boardEl.addEventListener('pointerup',()=>{if(drag)endDrag(true);});
 boardEl.addEventListener('pointercancel',()=>{if(drag)endDrag(false);});
 window.addEventListener('resize',layout);
+/* the hint line and the clue chips are rewritten on every move and change height as
+   they wrap — the board has to give those pixels back, or the page outgrows the frame
+   a portal gives it: a scrollbar on desktop, a clipped top row on a phone */
+if(window.ResizeObserver){
+  let pending=false;
+  const ro=new ResizeObserver(()=>{
+    if(pending) return;
+    pending=true;
+    requestAnimationFrame(()=>{pending=false;layout();});
+  });
+  for(const n of [el('tgt'),el('hint'),document.querySelector('#scGame .bar'),
+                  document.querySelector('#scGame .actbar')]) if(n) ro.observe(n);
+}
 
 /* ---------- persistence ---------- */
 async function save(){

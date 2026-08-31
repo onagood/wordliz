@@ -48,9 +48,13 @@ const FONTS=fs.readdirSync(FONT_DIR);
 // into it, so the version shown on the stats screen can never be stale, and HOME_URL
 // with it. The source keeps 'dev' and an empty home — running from the repo should say so.
 const STAMP=new Date().toISOString().slice(0,10);
+// a build with its own home never reads ITCH_URL — shareUrl() short-circuits on HOME_URL.
+// Blank it anyway: a rival portal's address sitting in a file a reviewer can read is a
+// question nobody needs asked, and CrazyGames rejects links to competing portals.
 const stamp=(h,home)=>h
   .replace(/const VERSION='[^']*'/,`const VERSION='${STAMP}'`)
-  .replace(/const HOME_URL='[^']*'/,`const HOME_URL='${home}'`);
+  .replace(/const HOME_URL='[^']*'/,`const HOME_URL='${home}'`)
+  .replace(/const ITCH_URL='[^']*'/,home?`const ITCH_URL=''`:`$&`);
 
 function target(name,home){
   const dir=path.join(DIST,name);

@@ -1,6 +1,6 @@
 /* Wordliz service worker: precache the game, then stale-while-revalidate —
    offline play works from the first visit, updates arrive one load later. */
-const CACHE='wordliz-v5';
+const CACHE='wordliz-v7';
 const ASSETS=['./','./index.html','./words_en.js','./gloss_en.js',
   './manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png',
   './fonts/rubik-latin.woff2','./fonts/rubik-latin-ext.woff2','./fonts/rubik-cyrillic.woff2',
