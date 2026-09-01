@@ -41,9 +41,17 @@ const TARGETS={
   // the test link must not travel (T&C 3.3), so this build shares wherever it is served.
   poki: {home:'',   portal:'poki'},
 };
-// The SDK each portal's own build carries, and nobody else's.
+// The SDK each portal's own build carries, and nobody else's. Each snippet parks the
+// SDK's init promise on window.__portalReady, so Portal can order its calls after init.
 const SDK={
-  crazygames:'',    // no SDK yet — Basic Launch does not require one
+  // v3 wants loadingStart as soon as loading is under way; init is the earliest the SDK
+  // can hear it, and Portal's loadingFinished answers with loadingStop when the game is up.
+  // init itself reaches for document.body, so from <head> it must wait for the DOM first.
+  crazygames:'<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>\n'+
+       '<script>window.__portalReady=(window.CrazyGames&&window.CrazyGames.SDK)?new Promise(function(r){'+
+       'var go=function(){r(CrazyGames.SDK.init().then(function(){CrazyGames.SDK.game.loadingStart();}));};'+
+       'document.body?go():document.addEventListener("DOMContentLoaded",go);'+
+       '}):null;window.__portalReady&&window.__portalReady.catch(function(){});</script>',
   poki:'<script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>\n'+
        '<script>window.__portalReady=window.PokiSDK?PokiSDK.init():null;'+
        'window.__portalReady&&window.__portalReady.catch(function(){});</script>',
@@ -51,7 +59,7 @@ const SDK={
 // Where each portal's SDK must come from. Written out again, apart from the snippet above,
 // because a check that reads the same line it is checking is not a check — this is the copy
 // that would still disagree if the snippet above were pasted from the wrong portal's docs.
-const SDK_HOST={ crazygames:null, poki:'game-cdn.poki.com' };
+const SDK_HOST={ crazygames:'sdk.crazygames.com', poki:'game-cdn.poki.com' };
 
 // --- folder targets: files as-is (the PWA files ride along; portals ignore them
 //     harmlessly). Every words_*.js / gloss_*.js is picked up automatically — adding

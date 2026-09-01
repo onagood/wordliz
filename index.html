@@ -682,19 +682,29 @@ const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&qu
    play/stop are idempotent: the game reaches them from several directions (a win, a pause,
    quitting to the menu) and a portal counts a doubled event as a doubled session. */
 const Portal=(()=>{
-  const sdk=()=>window.PokiSDK;
+  /* the game speaks in three moments — loaded, start, stop — and each portal's SDK has
+     its own verbs for them. One row per dialect; a build carries at most one SDK, so
+     whichever row answers is the portal this build is standing in. */
+  const DIALECTS=[
+    {sdk:()=>window.PokiSDK,
+     loaded:'gameLoadingFinished', start:'gameplayStart', stop:'gameplayStop'},
+    {sdk:()=>window.CrazyGames&&window.CrazyGames.SDK&&window.CrazyGames.SDK.game,
+     loaded:'loadingStop', start:'gameplayStart', stop:'gameplayStop'},
+  ];
   // the SDK's own init promise, parked on window by the injected snippet; without it
   // (every non-portal build) the work simply runs now
   const when=f=>{const p=window.__portalReady;
     if(p&&p.then) p.then(f).catch(()=>{}); else f();};
-  const call=name=>when(()=>{try{const s=sdk(); s&&s[name]&&s[name]();}catch(e){}});
+  const call=verb=>when(()=>{try{
+    for(const d of DIALECTS){const s=d.sdk(); if(s){ s[d[verb]]&&s[d[verb]](); return; }}
+  }catch(e){}});
   let playing=false, loaded=false;
   return {
-    loadingFinished(){ if(loaded) return; loaded=true; call('gameLoadingFinished'); },
+    loadingFinished(){ if(loaded) return; loaded=true; call('loaded'); },
     /* a fresh board is a fresh session, so a play() over a running one closes it first —
        "Play again" goes straight from one board to the next without passing the menu */
-    play(){ if(playing) call('gameplayStop'); playing=true; call('gameplayStart'); },
-    stop(){ if(!playing) return; playing=false; call('gameplayStop'); },
+    play(){ if(playing) call('stop'); playing=true; call('start'); },
+    stop(){ if(!playing) return; playing=false; call('stop'); },
   };
 })();
 
