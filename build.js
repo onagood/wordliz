@@ -46,12 +46,15 @@ const TARGETS={
 const SDK={
   // v3 wants loadingStart as soon as loading is under way; init is the earliest the SDK
   // can hear it, and Portal's loadingFinished answers with loadingStop when the game is up.
-  // init itself reaches for document.body, so from <head> it must wait for the DOM first.
-  crazygames:'<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>\n'+
-       '<script>window.__portalReady=(window.CrazyGames&&window.CrazyGames.SDK)?new Promise(function(r){'+
-       'var go=function(){r(CrazyGames.SDK.init().then(function(){CrazyGames.SDK.game.loadingStart();}));};'+
-       'document.body?go():document.addEventListener("DOMContentLoaded",go);'+
-       '}):null;window.__portalReady&&window.__portalReady.catch(function(){});</script>',
+  // The script is deferred because it reaches for document.body the moment it evaluates —
+  // from <head> that is a race against the parser. Deferred scripts finish before
+  // DOMContentLoaded, so waiting for that event is what orders init after the SDK.
+  crazygames:'<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js" defer></script>\n'+
+       '<script>window.__portalReady=new Promise(function(r){var go=function(){'+
+       'var s=window.CrazyGames&&window.CrazyGames.SDK;'+
+       'r(s?s.init().then(function(){s.game.loadingStart();}):undefined);};'+
+       'document.readyState==="loading"?document.addEventListener("DOMContentLoaded",go):go();'+
+       '});window.__portalReady.catch(function(){});</script>',
   poki:'<script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>\n'+
        '<script>window.__portalReady=window.PokiSDK?PokiSDK.init():null;'+
        'window.__portalReady&&window.__portalReady.catch(function(){});</script>',
