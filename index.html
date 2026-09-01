@@ -558,6 +558,9 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'
     'You’ve got it':'Разобрались',
     'Rows and columns move whole lines. Green rows bank themselves. Everything else is reading the colors.':'Строки и столбцы двигают целые линии. Зелёная строка банкуется сама. Всё остальное — чтение цветов.',
     'Play a real board':'Сыграть настоящую доску',
+    'Ready for 5×5?':'Готовы к 5×5?',
+    'Try Rush — each word buys time':'Попробуйте Гонку — каждое слово покупает время',
+    'Next goal':'Следующая цель',
     'Overall':'Всего','Points':'Очки','Games':'Игры','Hints used':'Подсказок','Ruled out':'Отсеяно',
     'Played':'Сыграно','Win rate':'Побед','Avg moves':'Ср. ходов',
     'Best 4×4':'Рекорд 4×4','Best 5×5':'Рекорд 5×5','Best 6×6':'Рекорд 6×6',
@@ -1371,29 +1374,43 @@ function histHtml(){
 }
 /* ---------- achievements: predicates over the career counters, so they
    unlock retroactively and cost no storage beyond an id→timestamp map ---------- */
+/* p/n on the countable ones: current progress and the goal, for the end card's
+   "next goal" line. The one-shot feats go without — "0 of 1" is not a nudge. */
 const ACH=[
   {id:'w1',  name:'First blood',       desc:'Solve your first board',            test:c=>c.wins>=1},
-  {id:'w10', name:'Regular',           desc:'Solve 10 boards',                   test:c=>c.wins>=10},
-  {id:'w50', name:'Veteran',           desc:'Solve 50 boards',                   test:c=>c.wins>=50},
-  {id:'s3',  name:'Warming up',        desc:'A 3-day daily streak',              test:c=>(c.maxStreak||0)>=3},
-  {id:'s7',  name:'One week',          desc:'A 7-day daily streak',              test:c=>(c.maxStreak||0)>=7},
-  {id:'s30', name:'Iron habit',        desc:'A 30-day daily streak',             test:c=>(c.maxStreak||0)>=30},
-  {id:'r5',  name:'Sprinter',          desc:'5 words in one Rush run',           test:c=>(c.hardBest||0)>=5},
-  {id:'r10', name:'Marathoner',        desc:'10 words in one Rush run',          test:c=>(c.hardBest||0)>=10},
-  {id:'r15', name:'Time lord',         desc:'15 words in one Rush run',          test:c=>(c.hardBest||0)>=15},
+  {id:'w10', name:'Regular',           desc:'Solve 10 boards',                   test:c=>c.wins>=10,               p:c=>c.wins,                  n:10},
+  {id:'w50', name:'Veteran',           desc:'Solve 50 boards',                   test:c=>c.wins>=50,               p:c=>c.wins,                  n:50},
+  {id:'s3',  name:'Warming up',        desc:'A 3-day daily streak',              test:c=>(c.maxStreak||0)>=3,      p:c=>c.streak||0,             n:3},
+  {id:'s7',  name:'One week',          desc:'A 7-day daily streak',              test:c=>(c.maxStreak||0)>=7,      p:c=>c.streak||0,             n:7},
+  {id:'s30', name:'Iron habit',        desc:'A 30-day daily streak',             test:c=>(c.maxStreak||0)>=30,     p:c=>c.streak||0,             n:30},
+  {id:'r5',  name:'Sprinter',          desc:'5 words in one Rush run',           test:c=>(c.hardBest||0)>=5,       p:c=>c.hardBest||0,           n:5},
+  {id:'r10', name:'Marathoner',        desc:'10 words in one Rush run',          test:c=>(c.hardBest||0)>=10,      p:c=>c.hardBest||0,           n:10},
+  {id:'r15', name:'Time lord',         desc:'15 words in one Rush run',          test:c=>(c.hardBest||0)>=15,      p:c=>c.hardBest||0,           n:15},
   {id:'six', name:'Heavyweight',       desc:'Solve a 6×6 board',                 test:c=>!!(c.hist&&c.hist[6]&&Object.keys(c.hist[6]).length)},
   {id:'pure',name:'No help needed',    desc:'Solve a board without hints',       test:c=>!!(c.bestBy&&Object.keys(c.bestBy).length)},
   {id:'fast',name:'Lightning',         desc:'Solve a board in 90 seconds',       test:c=>c.bestTime!=null&&c.bestTime<=90},
-  {id:'red25',name:'Sceptic',          desc:'Rule out 25 red words',             test:c=>(c.redsTotal||0)>=25},
-  {id:'red100',name:'Lexicographer',   desc:'Rule out 100 red words',            test:c=>(c.redsTotal||0)>=100},
-  {id:'c100', name:'Collector',        desc:'Find 100 different words',          test:c=>(c.collected||[]).length>=100},
-  {id:'c500', name:'Librarian',        desc:'Find 500 different words',          test:c=>(c.collected||[]).length>=500},
-  {id:'c2000',name:'Walking dictionary',desc:'Find 2000 different words',        test:c=>(c.collected||[]).length>=2000},
+  {id:'red25',name:'Sceptic',          desc:'Rule out 25 red words',             test:c=>(c.redsTotal||0)>=25,     p:c=>c.redsTotal||0,          n:25},
+  {id:'red100',name:'Lexicographer',   desc:'Rule out 100 red words',            test:c=>(c.redsTotal||0)>=100,    p:c=>c.redsTotal||0,          n:100},
+  {id:'c100', name:'Collector',        desc:'Find 100 different words',          test:c=>(c.collected||[]).length>=100,  p:c=>(c.collected||[]).length, n:100},
+  {id:'c500', name:'Librarian',        desc:'Find 500 different words',          test:c=>(c.collected||[]).length>=500,  p:c=>(c.collected||[]).length, n:500},
+  {id:'c2000',name:'Walking dictionary',desc:'Find 2000 different words',        test:c=>(c.collected||[]).length>=2000, p:c=>(c.collected||[]).length, n:2000},
   {id:'d1',  name:'Duelist',           desc:'Win a duel',                        test:c=>(c.duelsWon||0)>=1},
-  {id:'d10', name:'Gunslinger',        desc:'Win 10 duels',                      test:c=>(c.duelsWon||0)>=10},
+  {id:'d10', name:'Gunslinger',        desc:'Win 10 duels',                      test:c=>(c.duelsWon||0)>=10,      p:c=>c.duelsWon||0,           n:10},
   {id:'bi',  name:'Polyglot',          desc:'Play in two languages',             test:c=>(c.langsPlayed||[]).length>=2},
   {id:'hc',  name:'Hardcore',          desc:'Win a custom game with no free letters', test:c=>(c.hardcoreWin||0)>=1}
 ];
+/* the unearned countable achievement the player is closest to — shown at the one
+   moment they are deciding whether to stay for another board */
+function nextGoal(){
+  const a=career.ach||{};
+  let best=null,r=-1;
+  for(const d of ACH){
+    if(!d.n||a[d.id]) continue;
+    const q=d.p(career)/d.n;
+    if(q>r){r=q;best=d;}
+  }
+  return best;
+}
 function toastAch(names){
   const t=el('toast');
   t.innerHTML=`<b style="color:var(--hit)">`+T('Achievement unlocked')+`</b> — `+names.map(n=>T(n)).join(' · ');
@@ -1514,6 +1531,15 @@ function showEnd(){
     if(mine!==null&&(challenge.metric==='moves'?mine<challenge.target:mine>challenge.target))
       challenge={metric:challenge.metric,target:mine,full:ch};
   }
+  /* the ladder: a solved board sells the next rung — 5×5 to a 4×4 winner, a first
+     Rush run to anyone who has never raced. A rung shows only while unclimbed,
+     so the nudge retires itself for players who have already been up there. */
+  let rung=null;
+  if(done==='win'&&!custom&&!challenge&&!hard){
+    if(N===4&&!(career.hist&&career.hist[5])) rung={label:'Ready for 5×5?',m:'free',size:5};
+    else if(!career.hardGames) rung={label:'Try Rush — each word buys time',m:'hard',size:N};
+  }
+  const goal=nextGoal();
   el('card').innerHTML=
     `<h2 class="word-tiles ${cls}" aria-label="${title}">${tileWord(title)}</h2>`+
     `<div class="big ${cls}">${big}</div><p class="sub">${sub}</p>`+duel+
@@ -1528,9 +1554,11 @@ function showEnd(){
       ?'A challenge code — tap to copy. It carries your {0} words: whoever enters it plays this board against that score.'
       :'A challenge code — tap to copy. It carries your {0} moves: whoever enters it plays this board against that score.',
       mode==='hard'?found:mv)+`</p>`:'')+
+    (goal?`<p class="sub codenote">${T('Next goal')}: ${T(goal.desc)} · ${goal.p(career)}/${goal.n}</p>`:'')+
     `<button class="btn ghost" id="bShare">`+T('Share this deal')+`</button>`+
     (canCont?`<button class="btn primary" id="bCont">`+TF('Continue · {0} pts for {1}s',CONT_COST,CONT_TIME)+`</button>`:'')+
-    `<button class="btn${canCont?' ghost':' primary'}" id="bAgain">`+T(challenge?'Retry this board':'Play again')+`</button>`+
+    (rung?`<button class="btn primary" id="bRung">`+T(rung.label)+`</button>`:'')+
+    `<button class="btn${canCont||rung?' ghost':' primary'}" id="bAgain">`+T(challenge?'Retry this board':'Play again')+`</button>`+
     `<button class="btn ghost" id="bMenu">`+T('Menu')+`</button>`;
   el('card').querySelectorAll('.found span').forEach(sp=>sp.onclick=()=>{
     if(!el('defOut')) return;
@@ -1552,6 +1580,7 @@ function showEnd(){
           :'\n'+TF('Code: {0}',dealCode()))
       +'\n'+TF('Play: {0}',shareUrl()), el('bShare'));
   };
+  if(rung) el('bRung').onclick=()=>start(rung.m,undefined,false,rung.size);
   el('bAgain').onclick=()=>challenge?playCode(challenge.full):(custom?startCustom(custom):start(mode));
   el('bMenu').onclick=()=>{el('veil').classList.remove('on');show('scMenu');refresh();};
   el('veil').classList.add('on');
