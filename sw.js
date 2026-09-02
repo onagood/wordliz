@@ -1,6 +1,6 @@
 /* Wordliz service worker: precache the game, then stale-while-revalidate —
    offline play works from the first visit, updates arrive one load later. */
-const CACHE='wordliz-v7';
+const CACHE='wordliz-v8';
 const ASSETS=['./','./index.html','./words_en.js','./gloss_en.js',
   './manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png',
   './fonts/rubik-latin.woff2','./fonts/rubik-latin-ext.woff2','./fonts/rubik-cyrillic.woff2',
@@ -21,6 +21,10 @@ self.addEventListener('fetch',e=>{
       if(res&&res.ok){const cp=res.clone();caches.open(CACHE).then(c=>c.put(e.request,cp));}
       return res;
     }).catch(()=>null);
-    return cached||await net||caches.match('./index.html');
+    if(cached) return cached;
+    const res=await net; if(res) return res;
+    /* offline and uncached: only a page navigation gets the app shell — a script or a
+       dictionary must fail outright, or the game would swallow HTML as data */
+    return e.request.mode==='navigate' ? caches.match('./index.html') : Response.error();
   })());
 });

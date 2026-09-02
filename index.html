@@ -71,7 +71,7 @@ body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size
 .doc,.codebox input,.defout{user-select:text;-webkit-user-select:text}
 b,strong{font-weight:600} /* the design tops out at 600; Rubik would go to 700 */
 .app{max-width:600px;margin:0 auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom));
-  min-height:100dvh;display:flex;flex-direction:column}
+  min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
 .screen{display:none;flex:1;flex-direction:column}
 .screen.on{display:flex}
 
@@ -99,16 +99,18 @@ b,strong{font-weight:600} /* the design tops out at 600; Rubik would go to 700 *
 .logo i.g{background:var(--hit);border-color:var(--hit-edge);border-bottom-color:var(--hit-deep);color:var(--hit-ink)}
 .logo i.a{background:var(--warm);border-color:var(--warm-edge);border-bottom-color:var(--warm-deep);color:var(--warm-ink)}
 .logo i.r{background:var(--acc);border-color:var(--acc-edge);border-bottom-color:var(--acc-deep);color:var(--acc-ink)}
-.logo i:nth-child(2){transform:rotate(-3deg)}
-.logo i:nth-child(3){transform:rotate(2deg)}
-.logo i:nth-child(5){transform:rotate(-2deg)}
-.logo i:nth-child(7){transform:rotate(3deg)}
-.logo i{cursor:pointer}
+.logo i:nth-child(2){--tilt:-3deg}
+.logo i:nth-child(3){--tilt:2deg}
+.logo i:nth-child(5){--tilt:-2deg}
+.logo i:nth-child(7){--tilt:3deg}
+.logo i{cursor:pointer;transform:rotate(var(--tilt,0deg))}
 .logo i.hop{animation:hop .52s cubic-bezier(.3,.7,.3,1)}
-@keyframes hop{0%,100%{translate:0 0}
-  30%{translate:0 calc(-1*var(--amp,12px))}
-  62%{translate:0 0}
-  80%{translate:0 calc(-.28*var(--amp,12px))}}
+/* transform, not the standalone translate property: WebViews before 2022 lack the
+   latter and would show no hop at all — so the tilt rides inside the same transform */
+@keyframes hop{0%,100%{transform:rotate(var(--tilt,0deg)) translateY(0)}
+  30%{transform:rotate(var(--tilt,0deg)) translateY(calc(-1*var(--amp,12px)))}
+  62%{transform:rotate(var(--tilt,0deg)) translateY(0)}
+  80%{transform:rotate(var(--tilt,0deg)) translateY(calc(-.28*var(--amp,12px)))}}
 @media(prefers-reduced-motion:reduce){.logo i.hop{animation:none}}
 .brand p{margin:14px 0 0;color:var(--ink-soft);font-size:.94rem;font-weight:500}
 .modes{margin:26px 0 0}
@@ -257,15 +259,15 @@ b,strong{font-weight:600} /* the design tops out at 600; Rubik would go to 700 *
 .kpi.ach.earned dt{color:var(--hit)}
 .kpi.ach.locked{opacity:.5}
 
-#tutCue{--d:1;position:absolute;z-index:4;pointer-events:none;font-size:1.9rem;color:var(--cta);
+#coachCue{--d:1;position:absolute;z-index:4;pointer-events:none;font-size:1.9rem;color:var(--cta);
   transform:translate(-50%,-50%)}
-#tutCue svg{display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,.28))}
-#tutCue.h{animation:cueH 1s ease-in-out infinite}
-#tutCue.v{animation:cueV 1s ease-in-out infinite}
+#coachCue svg{display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,.28))}
+#coachCue.h{animation:cueH 1s ease-in-out infinite}
+#coachCue.v{animation:cueV 1s ease-in-out infinite}
 /* --d is the move direction (1 or -1), so the glide always matches where the arrow points */
 @keyframes cueH{0%,100%{margin-left:calc(-12px*var(--d))}50%{margin-left:calc(12px*var(--d))}}
 @keyframes cueV{0%,100%{margin-top:calc(-12px*var(--d))}50%{margin-top:calc(12px*var(--d))}}
-@media(prefers-reduced-motion:reduce){#tutCue{animation:none!important}}
+@media(prefers-reduced-motion:reduce){#coachCue{animation:none!important}}
 /* ---------- overlay ---------- */
 .confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .confetti i{position:absolute;top:-16px;width:10px;height:14px;border-radius:2px;opacity:.95;
@@ -330,7 +332,7 @@ b,strong{font-weight:600} /* the design tops out at 600; Rubik would go to 700 *
       <button class="btn primary" id="goPlay" style="margin-top:12px">Play</button>
       <p class="blurb" id="blurb"></p>
       <div class="codebox">
-        <input id="codeIn" placeholder="Enter a board code" maxlength="18"
+        <input id="codeIn" placeholder="Enter a board code" maxlength="32"
           autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"
           aria-label="Board code">
         <button class="btn ghost" id="codeGo" style="width:auto;flex:0 0 auto;padding:12px 20px" data-i18n>Play</button>
@@ -392,7 +394,7 @@ b,strong{font-weight:600} /* the design tops out at 600; Rubik would go to 700 *
 
       <h3>Duels</h3>
       <p>A finished game shares as a <b>challenge code</b> that carries your result on top of the board: <b>B</b>-codes challenge your move count, <b>R</b>-codes replay a Rush run against your word count — Rush deals its replacement words in the same order for everyone, so the race is fair. Whoever enters the code plays the same board with your score to beat, gets a verdict at the end, and can fire their own challenge straight back.</p>
-      <button class="btn ghost" id="bTut" style="margin-top:20px">Play the tutorial</button>
+      <button class="btn ghost" id="bTut" style="margin-top:20px">Replay the coached board</button>
     </div>
   </section>
 
@@ -427,7 +429,7 @@ b,strong{font-weight:600} /* the design tops out at 600; Rubik would go to 700 *
     <div class="actbar">
       <button class="tool" id="bUndo" data-i18n>Undo</button>
       <button class="tool" id="bHint">Hint</button>
-      <button class="tool" id="bSkip" hidden data-i18n>Skip tutorial</button>
+
       <span id="ptsNow">0 pts</span>
     </div>
     <p class="hint" id="hint"></p>
@@ -439,7 +441,6 @@ b,strong{font-weight:600} /* the design tops out at 600; Rubik would go to 700 *
 <div id="toast" role="status"></div>
 
 <script src="words_en.js"></script>
-<script src="gloss_en.js"></script>
 <script>
 "use strict";
 /* ---------- i18n: everything a new language needs lives in one LANGS entry ----------
@@ -448,13 +449,13 @@ b,strong{font-weight:600} /* the design tops out at 600; Rubik would go to 700 *
      letter: ONE unused A-Z letter (not B/C/R) — the outer envelope on board codes,
      dictFile: 'words_xx.js' (same {4,5,6:{d,s}} blob format as words_en.js),
      glossFile: 'gloss_xx.js' or null (definitions are optional),
-     tut: {words:[w1,w2], rows:[scrambled1, scrambled2], steps:[...]} — a 2-word tutorial board,
+     first: the seed of a 4×4 deal with plain words — a newcomer's first board,
      str: {'English source string': 'translation', ...} — untranslated keys fall through,
      rules: '<h3>…' full rules HTML, or null to keep English
    } and nothing else — codes, daily, duels, custom mode all follow. */
 const LANGS={
   en:{name:'English', letter:'', dictFile:'words_en.js', glossFile:'gloss_en.js',
-      tut:null, str:null, rules:null}
+      first:43, str:null, rules:null}      // leap, wave, know, make
 };
 /* Russian plural: 1 ход, 2 хода, 5 ходов */
 const ruN=(n,one,few,many)=>{n=Math.abs(n);
@@ -462,12 +463,7 @@ const ruN=(n,one,few,many)=>{n=Math.abs(n);
   if(n%10>=2&&n%10<=4&&(n%100<12||n%100>14)) return few;
   return many;};
 LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'gloss_ru.js',
-  tut:{words:['игра','темп'],rows:['аигр','емпт'],steps:[null,
-    {t:'r',i:0,d:-1,msg:'Обе строки <b>янтарные</b> — буквы те, порядок нет. Сдвиньте верхнюю строку <b>влево</b>: вся линия едет как одно целое.'},
-    {t:'c',i:3,d:1, msg:'ИГРА забанковалась — вот и вся победа. Теперь <b>ТЕМП</b>: пустой ряд снизу — парковка. Потяните <b>последний столбец вниз</b>.'},
-    {t:'r',i:0,d:1, msg:'Прокрутите верхнюю строку <b>вправо</b>, чтобы пропуск оказался первым.'},
-    {t:'r',i:1,d:1, msg:'Сдвиньте нижний ряд <b>вправо</b> — буква Т хочет встать под пропуск.'},
-    {t:'c',i:0,d:-1,msg:'Поднимите <b>первый столбец вверх</b>. Вот и вся игра.'}]},
+  first:60,                       // кора, зона, река, уход
   str:{
     'Every letter is on the table. The words are hidden. Slide the grid until they line up.':'Все буквы уже на столе. Слова спрятаны. Двигайте сетку, пока они не соберутся.',
     'Daily':'Дневная','Free':'Свободная','Rush':'Гонка','Custom':'Своя','Play':'Играть',
@@ -475,6 +471,9 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'
     'a race against the clock':'наперегонки с часами','your rules and code':'ваши правила и код',
     'streak {0}':n=>`серия ${n}`,
     'How to play':'Как играть','Stats':'Статистика','Statistics':'Статистика','Reset all statistics':'Сбросить всю статистику',
+    'Tap again to reset everything':'Нажмите ещё раз, чтобы сбросить всё',
+    'Column {0} up':'Столбец {0} вверх','Column {0} down':'Столбец {0} вниз',
+    'Row {0} left':'Строка {0} влево','Row {0} right':'Строка {0} вправо',
     'Enter a board code':'Введите код доски','Not a valid code':'Не похоже на код',
     'A code recreates a board exactly — same words, same shuffle, in any copy of the game. Get one from the pause or end screen, click it to copy, send it to anyone.':'Код воссоздаёт доску в точности — те же слова, та же тасовка, в любой копии игры. Возьмите его на паузе или финальном экране, кликните, чтобы скопировать, и шлите кому угодно.',
     'The same board for everyone, once a day — always 5×5. No clock — your score is how few moves it took.':'Одна доска на всех, раз в день — всегда 5×5. Часов нет: счёт — это число ходов.',
@@ -484,7 +483,7 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'
     'Today’s board is done — <b>{0}</b>.':'Сегодняшняя доска пройдена — <b>{0}</b>.',
     '{0} moves':n=>`${n} ${ruN(n,'ход','хода','ходов')}`,
     'Streak <b>{0}</b> days.':n=>`Серия <b>${n}</b> ${ruN(n,'день','дня','дней')}.`,
-    'A new board arrives at midnight.':'Новая доска придёт в полночь по UTC.',
+    'A new board arrives at midnight.':'Новая доска придёт в полночь.',
     'Share today’s result':'Поделиться результатом',
     'Streak <b>{0}</b> day — keep it going.':n=>`Серия <b>${n}</b> ${ruN(n,'день','дня','дней')} — не прерывайте.`,
     'Streak <b>{0}</b> days — keep it going.':n=>`Серия <b>${n}</b> ${ruN(n,'день','дня','дней')} — не прерывайте.`,
@@ -499,7 +498,11 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'
     'Buzz on':'Вибро вкл','Buzz off':'Вибро выкл','Sound on':'Звук вкл','Sound off':'Звук выкл',
     'Theme: auto':'Тема: авто','Theme: dark':'Тема: тёмная','Theme: light':'Тема: светлая',
     'Moves':'Ходы','Found':'Найдено','Time':'Время','Score':'Счёт',
-    'Hint · {0}':'Подсказка · {0}','{0} pts':'{0} очк.','Undo':'Отмена','Skip tutorial':'Пропустить обучение',
+    'Hint · {0}':'Подсказка · {0}','{0} pts':'{0} очк.','Undo':'Отмена',
+    'Four words are hidden here, one letter of each showing. <b>Drag any row sideways</b>, or a column up and down. The whole line moves.':'Здесь спрятаны четыре слова, у каждого открыта одна буква. <b>Потяните любую строку вбок</b> или столбец вверх-вниз. Линия двигается целиком.',
+    '<b>Amber</b> row: the right letters, wrong order. <b>Green</b>: a word — it banks itself. <b>Red</b>: a real word, but not one of the four.':'<b>Янтарная</b> строка: те буквы, не тот порядок. <b>Зелёная</b>: слово, оно банкуется само. <b>Красная</b>: настоящее слово, но не из четырёх.',
+    'Banked — and that opened a letter in another word. Keep going.':'Есть! И это открыло букву в другом слове. Дальше так же.',
+    'Replay the coached board':'Переиграть доску с пояснениями',
     'You have <b>{0}</b> point':'У вас <b>{0}</b> очко',
     'You have <b>{0}</b> points':n=>`У вас <b>${n}</b> ${ruN(n,'очко','очка','очков')}`,
     'version {0}':'версия {0}',
@@ -555,11 +558,12 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'
     'Reveal a letter':'Открыть букву',
     'Open one more letter in <b style="letter-spacing:.16em">{0}</b> for <b>{1}</b> points. You have {2}.':(m,c,p)=>`Открыть ещё одну букву в <b style="letter-spacing:.16em">${m}</b> за <b>${c}</b> очков. У вас ${p}.`,
     'Reveal · {0} pts':'Открыть · {0} очк.','Not now':'Не сейчас',
-    'You’ve got it':'Разобрались',
+
     'Rows and columns move whole lines. Green rows bank themselves. Everything else is reading the colors.':'Строки и столбцы двигают целые линии. Зелёная строка банкуется сама. Всё остальное — чтение цветов.',
-    'Play a real board':'Сыграть настоящую доску',
     'Ready for 5×5?':'Готовы к 5×5?',
     'Try Rush — each word buys time':'Попробуйте Гонку — каждое слово покупает время',
+    'Today’s board — one for everyone':'Доска дня — одна на всех',
+    'There is also a daily board: the same one for everyone, a new one every midnight.':'Есть ещё дневная доска: одна на всех, новая каждую полночь.',
     'Next goal':'Следующая цель',
     'Overall':'Всего','Points':'Очки','Games':'Игры','Hints used':'Подсказок','Ruled out':'Отсеяно',
     'Played':'Сыграно','Win rate':'Побед','Avg moves':'Ср. ходов',
@@ -583,7 +587,7 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'
     'Time lord':'Повелитель времени','15 words in one Rush run':'15 слов за один забег Гонки',
     'Heavyweight':'Тяжеловес','Solve a 6×6 board':'Решите доску 6×6',
     'No help needed':'Без помощи','Solve a board without hints':'Решите доску без подсказок',
-    'Lightning':'Молния','Solve a board in 90 seconds':'Решите доску за 90 секунд',
+    'Lightning':'Молния','Solve a board in 90 seconds, no hints':'Решите доску за 90 секунд без подсказок',
     'Sceptic':'Скептик','Rule out 25 red words':'Отсейте 25 красных слов',
     'Lexicographer':'Лексикограф','Rule out 100 red words':'Отсейте 100 красных слов',
     'Collector':'Коллекционер','Find 100 different words':'Найдите 100 разных слов',
@@ -622,7 +626,7 @@ LANGS.ru={name:'Русский', letter:'X', dictFile:'words_ru.js', glossFile:'
     '<p>Каждая доска — одно число, поэтому она помещается в короткий код вроде <b>PS9WXB</b>. Код и ссылка появляются в конце игры и на паузе. Введите чужой код в меню — и вы на той же доске: те же слова, та же тасовка. Ничего не загружается: доска строится из числа, так что код работает в любой копии игры. Русские коды начинаются с буквы <b>X</b>.</p>'+
     '<h3>Дуэли</h3>'+
     '<p>Законченная игра делится <b>кодом-вызовом</b>: он несёт ваш результат поверх доски. Кто введёт код — сыграет ту же доску против вашего счёта (меньше ходов, а в Гонке больше слов), получит вердикт в конце и может тут же кинуть вызов в ответ. Гонка честная: слова-замены приходят всем в одном порядке.</p>'+
-    '<button class="btn ghost" id="bTut" style="margin-top:20px">Пройти обучение</button>'
+    '<button class="btn ghost" id="bTut" style="margin-top:20px">Переиграть доску с пояснениями</button>'
 };
 let uiLang='en';                 // interface language (user preference)
 let gameLang='en';               // the board's dictionary language (a foreign code sets it)
@@ -645,7 +649,7 @@ const bankFrom=blobs=>{const B={};
   }
   return B;};
 const LANG_BANKS={en:bankFrom(window.WORDLIZ_WORDS)};
-const LANG_GLOSS={en:window.WORDLIZ_GLOSS||{}};
+const LANG_GLOSS={en:window.WORDLIZ_GLOSS||{}};   // English arrives late, see deferGloss below
 let BANK=LANG_BANKS.en;
 let DICT=BANK[5].DICT, SEED=BANK[5].SEED;
 let GLOSS=LANG_GLOSS.en;
@@ -654,14 +658,28 @@ function loadLang(code){         // lazy-load a language's dictionary (and gloss
   const L=LANGS[code];
   const grab=src=>new Promise((res,rej)=>{const s=document.createElement('script');
     s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s);});
+  /* onload also fires for a 200 that carried the wrong thing — the service worker's
+     offline shell, a captive portal — so trust the globals only if the script replaced them */
+  const words0=window.WORDLIZ_WORDS, gloss0=window.WORDLIZ_GLOSS;
   return grab(L.dictFile).then(()=>{
+    if(window.WORDLIZ_WORDS===words0) throw new Error('dictionary did not load');
     LANG_BANKS[code]=bankFrom(window.WORDLIZ_WORDS);
     LANG_GLOSS[code]={};
     return L.glossFile
-      ? grab(L.glossFile).then(()=>{LANG_GLOSS[code]=window.WORDLIZ_GLOSS||{};},()=>{})
+      ? grab(L.glossFile).then(()=>{const g=window.WORDLIZ_GLOSS;
+          if(g&&g!==gloss0&&g!==LANG_GLOSS.en) LANG_GLOSS[code]=g;},()=>{})
       : null;
   });
 }
+/* the English glossary is decoration — a word's meaning once it turns up — and the
+   biggest file the first screen used to wait for. It now arrives after the game is up. */
+(function deferGloss(){
+  const g=LANGS.en.glossFile; if(!g||Object.keys(LANG_GLOSS.en).length) return;
+  const go=()=>{const s=document.createElement('script'); s.src=g;
+    s.onload=()=>{LANG_GLOSS.en=window.WORDLIZ_GLOSS||{}; if(gameLang==='en') GLOSS=LANG_GLOSS.en;};
+    document.head.appendChild(s);};
+  if(window.requestIdleCallback) requestIdleCallback(go,{timeout:2500}); else setTimeout(go,400);
+})();
 function useGameLang(code){      // point the engine at a loaded language's data
   gameLang=code;
   BANK=LANG_BANKS[code];
@@ -837,11 +855,16 @@ const EMBEDDED=(()=>{try{if(window.self!==window.top)return true;}catch(e){retur
   return ON_ITCH;})();
 const shareUrl=()=>HOME_URL||(ON_ITCH?ITCH_URL:location.origin+location.pathname);
 function setSeed(x){seed=x>>>0;rnd=mulberry32(seed);}
-const todayKey=()=>new Date().toISOString().slice(0,10);
-const yesterKey=()=>new Date(Date.now()-864e5).toISOString().slice(0,10);
+/* the daily turns over at the player's own midnight — that is what the menu promises
+   and what a streak is judged against. Keys are local calendar dates; the day before
+   comes from calendar arithmetic, not 24 hours, because a DST day is not 24 hours */
+const dateKey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const shiftKey=(k,n)=>{const [y,m,d]=k.split('-').map(Number);return dateKey(new Date(y,m-1,d+n));};
+const todayKey=()=>dateKey(new Date());
+const yesterKey=()=>shiftKey(todayKey(),-1);
 const dailyDone=()=>career.daily && career.daily.date===todayKey();
-const dailySeed=()=>{const d=new Date();
-  return (d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate())>>>0;};
+const dailySeedOf=k=>(+k.replace(/-/g,''))>>>0;
+let dailyKey='';                  // the date the running daily belongs to, fixed when dealt
 let grid=[], tiles=new Map(), nextId=0, targets=[];
 let mv=0, found=0, score=0, timeLeft=0, clock=null;
 let dirs={L:0,R:0,U:0,D:0};
@@ -851,6 +874,8 @@ const dirSigHtml=()=>[[0,dirs.R],[180,dirs.L],[-90,dirs.U],[90,dirs.D]]
   .map(([rot,n])=>`<span class="dsig">${ARROW(rot)}${n}</span>`).join('');
 let done=null, endgame=false, busy=false, paused=false;
 let usedContinue=false, bankedScore=0, step=0, gap=8, hintsUsed=0;
+let tallied=null;                 // what finish() has already credited this deal (Rush Continue brings it back)
+let landing=0;                    // banked rows still settling into the board
 let t0=0, tAcc=0, reds=0;
 const foundReal=new Set();
 const elapsed=()=> t0 ? tAcc+(performance.now()-t0)/1000 : tAcc;
@@ -897,6 +922,7 @@ function deal(s){
     }
   } while(++guard<6 && idx(grid.length).some(r=>rowState(r)>=2));
   mv=0; found=0; score=0; done=null; usedContinue=false; bankedScore=0; hintsUsed=0; undoState=null;
+  tallied=null; landing=0; refresh.chips=null;
   dirs={L:0,R:0,U:0,D:0};
   stopClock(); timeLeft=(custom&&custom.t)||60; t0=0; tAcc=0; reds=0; foundReal.clear(); hideFlash();
   build(); refresh();
@@ -906,12 +932,12 @@ function rawCol(c,d){const h=grid.length;if(h<2)return;const col=grid.map(x=>x[c
   for(let i=0;i<h;i++)o[(i+d+h)%h]=col[i];for(let i=0;i<h;i++)grid[i][c]=o[i];}
 let undoState=null;
 const pushUndo=()=>{undoState={g:grid.map(r=>[...r]),mv,dirs:{...dirs}}};
-function shiftRow(r,d){if(done||busy||paused)return;if(tut&&!tutAllows('r',r,d))return;pushUndo();rawRow(r,d);mv++;dirs[d>0?'R':'L']++;Haptics.tick();Sfx.tick();
+function shiftRow(r,d){if(done||busy||paused)return;pushUndo();rawRow(r,d);mv++;dirs[d>0?'R':'L']++;Haptics.tick();Sfx.tick();
   if(mode==='free'&&!clock)startClock();
-  paint({t:'r',i:r,d});scanReds();refresh();sweep();if(tut)tutMoved();}
-function shiftCol(c,d){if(done||busy||paused||grid.length<2)return;if(tut&&!tutAllows('c',c,d))return;pushUndo();rawCol(c,d);mv++;dirs[d>0?'D':'U']++;Haptics.tick();Sfx.tick();
+  paint({t:'r',i:r,d});scanReds();refresh();sweep();if(coach)killCue();}
+function shiftCol(c,d){if(done||busy||paused||grid.length<2)return;pushUndo();rawCol(c,d);mv++;dirs[d>0?'D':'U']++;Haptics.tick();Sfx.tick();
   if(mode==='free'&&!clock)startClock();
-  paint({t:'c',i:c,d});scanReds();refresh();sweep();if(tut)tutMoved();}
+  paint({t:'c',i:c,d});scanReds();refresh();sweep();if(coach)killCue();}
 
 const rowWord=r=>{const a=grid[r];
   return a.some(x=>x===null)?'':a.map(id=>tiles.get(id).letter).join('');};
@@ -931,11 +957,16 @@ function startClock(){
   if(mode==='hard'||(custom&&custom.t)){
     clock=setInterval(()=>{
       timeLeft-=0.1;
-      if(timeLeft<=0){timeLeft=0;stopClock();finish(false);}
-      refresh();
+      if(timeLeft<=0){
+        timeLeft=0;
+        /* a row that turned green before zero is the player's: hold at zero while it
+           banks (busy) or settles (landing) — in Rush its bonus then restarts the count */
+        if(!busy&&!landing){stopClock();finish(false);}
+      }
+      tickClock();
     },100);
   } else {
-    clock=setInterval(refresh,250);
+    clock=setInterval(tickClock,250);
   }
 }
 function stopClock(){
@@ -999,7 +1030,6 @@ function setFlash(kind,w){
 function hideFlash(){clearTimeout(setFlash.t);el('toast').classList.remove('on','front');}
 /* each new real-but-wrong word pays a point — once per game */
 function scanReds(){
-  if(tut) return;
   for(let r=0;r<grid.length;r++){
     if(rowState(r)!==1) continue;
     const w=rowWord(r);
@@ -1015,9 +1045,9 @@ function bank(r){
   if(done||rowState(r)!==3) return;
   const w=rowWord(r);
   const t=targets.find(x=>x.w===w&&!x.done); t.done=true;
-  found++; undoState=null; Haptics.hit(); Sfx.hit();
-  if(!tut&&defOf(w)) setFlash('bank',w);
-  if(tut) setTimeout(tutBankAdvance,650);
+  found++; undoState=null; landing++; Haptics.hit(); Sfx.hit();
+  if(defOf(w)) setFlash('bank',w);
+  if(coach) coachBanked();
   if(mode==='hard'){ score+=N; timeLeft+=rushBonus(found); startClock(); }
   targets.forEach(x=>x.fresh=[]);
   if(mode==='free'){
@@ -1037,6 +1067,7 @@ function bank(r){
   setTimeout(()=>dead.forEach(id=>{const o=tiles.get(id);if(o&&o.el)o.el.classList.add('gone');}),300);
   if(mode==='hard') replaceRow(r); else grid.splice(r,1);
   setTimeout(()=>{
+    landing--;
     dead.forEach(id=>{const o=tiles.get(id);if(o&&o.el)o.el.remove();tiles.delete(id);});
     build();
     if(mode==='hard'){refresh();sweep();return;}
@@ -1048,26 +1079,33 @@ function bank(r){
 }
 function finish(win){
   if(done) return;
-  if(tut){ done='win'; stopClock(); Portal.stop(); Haptics.over(); Sfx.over(true); tutFinish(); return; }
+  if(coach){ coach=null; killCue(); career.tutorialDone=true; }   // a board seen through: no more coaching
   done = win ? 'win' : ((mode==='hard'||(custom&&custom.t))?'timeup':'gave');
-  stopClock(); Portal.stop(); Haptics.over(); Sfx.over(win); career.deals++;
+  stopClock(); Portal.stop(); Haptics.over(); Sfx.over(win);
+  /* a Rush Continue brings the same deal back here a second time: credit only what is
+     new since the first pass, or one run counts as two and its words count twice */
+  const first=!tallied, was=tallied||{found:0,reds:0,duel:null};
+  if(first) career.deals++;
   const got=targets.filter(t=>t.done).map(t=>t.w);
   const set=new Set(career.collected||[]); got.forEach(w=>set.add(w));
   career.collected=[...set];
-  career.redsTotal=(career.redsTotal||0)+reds;
+  career.redsTotal=(career.redsTotal||0)+reds-was.reds;
+  let duel=null;
   if(challenge){
     const mine=challenge.metric==='moves'?(win?mv:null):found;
-    if(mine!==null&&(challenge.metric==='moves'?mine<challenge.target:mine>challenge.target))
-      career.duelsWon=(career.duelsWon||0)+1;
-    else if(mine===challenge.target) career.duelsTied=(career.duelsTied||0)+1;
-    else career.duelsLost=(career.duelsLost||0)+1;
+    duel = (mine!==null&&(challenge.metric==='moves'?mine<challenge.target:mine>challenge.target)) ? 'duelsWon'
+      : mine===challenge.target ? 'duelsTied' : 'duelsLost';
+    if(was.duel) career[was.duel]=Math.max(0,(career[was.duel]||0)-1);   // the verdict moved on
+    career[duel]=(career[duel]||0)+1;
   }
+  tallied={found,reds,duel};
   if(custom){
     if(win&&!custom.m&&custom.k===0) career.hardcoreWin=(career.hardcoreWin||0)+1;
     save(); checkAch(); refresh(); showEnd(); return;   // house rules: no points, no bests
   }
   if(mode==='hard'){
-    career.hardGames++; career.hardWords+=found;
+    if(first) career.hardGames++;
+    career.hardWords+=found-was.found;
     if(found>career.hardBest) career.hardBest=found;
     career.points += score-bankedScore; bankedScore=score;
   } else {
@@ -1083,11 +1121,13 @@ function finish(win){
         if(b[N]===undefined||mv<b[N]) b[N]=mv;
       }}
   }
-  if(isDaily && !dailyDone()){
+  /* judged against the day the board was dealt: a daily finished a minute past
+     midnight is still yesterday's, and must not mark today's as done */
+  if(isDaily && !(career.daily&&career.daily.date===dailyKey)){
     const prev=career.daily;
-    career.streak = (prev && prev.date===yesterKey()) ? career.streak+1 : 1;
+    career.streak = (prev && prev.date===shiftKey(dailyKey,-1)) ? career.streak+1 : 1;
     if(career.streak>career.maxStreak) career.maxStreak=career.streak;
-    career.daily={date:todayKey(), solved:done==='win', moves:mv, found};
+    career.daily={date:dailyKey, solved:done==='win', moves:mv, found};
   }
   save(); checkAch(); refresh(); showEnd();
 }
@@ -1111,13 +1151,13 @@ function build(){
   const R=grid.length;
   ['colTop','colBottom'].forEach(k=>{el(k).style.gridTemplateColumns=`repeat(${N},1fr)`;el(k).innerHTML='';});
   for(let c=0;c<N;c++){
-    el('colTop').appendChild(nudge(-90,`Column ${c+1} up`,()=>shiftCol(c,-1),R<2));
-    el('colBottom').appendChild(nudge(90,`Column ${c+1} down`,()=>shiftCol(c,1),R<2));
+    el('colTop').appendChild(nudge(-90,TF('Column {0} up',c+1),()=>shiftCol(c,-1),R<2));
+    el('colBottom').appendChild(nudge(90,TF('Column {0} down',c+1),()=>shiftCol(c,1),R<2));
   }
   ['rowLeft','rowRight'].forEach(k=>el(k).innerHTML='');
   for(let r=0;r<R;r++){
-    el('rowLeft').appendChild(nudge(180,`Row ${r+1} left`,()=>shiftRow(r,-1)));
-    el('rowRight').appendChild(nudge(0,`Row ${r+1} right`,()=>shiftRow(r,1)));
+    el('rowLeft').appendChild(nudge(180,TF('Row {0} left',r+1),()=>shiftRow(r,-1)));
+    el('rowRight').appendChild(nudge(0,TF('Row {0} right',r+1),()=>shiftRow(r,1)));
   }
   boardEl.querySelectorAll('.socket').forEach(x=>x.remove());
   if(endgame) for(let r=0;r<R;r++) for(let c=0;c<N;c++){
@@ -1185,6 +1225,7 @@ function layout(){
     el(k).style.gap=gap+'px';[...el(k).children].forEach(c=>c.style.height=size+'px');});
   el('colTop').style.gap=gap+'px'; el('colBottom').style.gap=gap+'px';
   paint(null);
+  if(coach) coachCue();                          /* the cue sits on the board, so it moves with it */
 }
 function paint(m){
   const wrap=new Set();
@@ -1214,6 +1255,13 @@ const mask=t=>[...t.w].map((ch,i)=>{
   return (t.fresh||[]).includes(i) ? `<u>${ch.toUpperCase()}</u>` : ch.toUpperCase();
 }).join('');
 
+/* the clock's own repaint: only the numbers that move with time. refresh() rewrites the
+   clue chips, the hint line and the menu cards — far too much for ten times a second on
+   a cheap phone, and rebuilding the chips restarted the fresh-letter pulse every tick */
+function tickClock(){
+  if(mode==='hard'){ el('d1').textContent=timeLeft.toFixed(1); el('d1').className='clock'+(timeLeft<=10?' hot':''); }
+  else el('d3').textContent=(custom&&custom.t)?Math.ceil(timeLeft)+'s':Math.floor(elapsed())+'s';
+}
 function refresh(){
   const hard=mode==='hard';
   el('l1').textContent=hard?T('Time'):T('Moves');
@@ -1224,25 +1272,30 @@ function refresh(){
   el('l3').textContent=hard?T('Score'):T('Time');
   el('d3').textContent=hard?score:((custom&&custom.t)?Math.ceil(timeLeft)+'s':Math.floor(elapsed())+'s');
   el('d3').className=hard?'':'clock';
-  const ub=el('bUndo'); ub.disabled = !undoState || !!done || paused || !!tut;
-  ub.hidden = !!tut;
+  const ub=el('bUndo'); ub.disabled = !undoState || !!done || paused;
   const hb=el('bHint');
-  hb.hidden = mode!=='free' || !!tut || (custom&&!custom.h);
-  hb.disabled = done||paused||career.points<HINT_COST;
+  hb.hidden = mode!=='free' || (custom&&!custom.h);
+  hb.disabled = done||paused||career.points<HINT_COST||!targets.some(t=>!t.done&&t.shown.length<CAP);
   hb.textContent = TF('Hint · {0}',HINT_COST);
-  el('bSkip').hidden = !tut;
-  el('ptsNow').hidden = !!tut || !!(custom&&!custom.h);
+  el('ptsNow').hidden = !!(custom&&!custom.h);
   el('ptsNow').textContent = TF('{0} pts',career.points);
   const canHint = !done && !paused && mode==='free' && (!custom||!!custom.h) && career.points>=HINT_COST;
   const list=targets.filter(t=>!hard||!t.done);
-  el('tgt').innerHTML=list.map(t=>{
-    const open = !t.done && t.shown.length<N && canHint;
+  /* CAP, not N: two letters always stay hidden, as the rules promise — a hint may not
+     buy the last of them any more than the free reveals may */
+  const chips=list.map(t=>{
+    const open = !t.done && t.shown.length<CAP && canHint;
     return `<span class="${t.done?'done':(open?'can':'')}">`+(t.done?t.w.toUpperCase():mask(t))+`</span>`;
   }).join('');
-  [...el('tgt').children].forEach((sp,i)=>{ if(sp.classList.contains('can')) sp.onclick=()=>askHint(list[i]); });
+  /* rebuilt only when they changed: a new element restarts the fresh-letter pulse,
+     and this runs on every move */
+  if(chips!==refresh.chips){
+    refresh.chips=chips; el('tgt').innerHTML=chips;
+    [...el('tgt').children].forEach((sp,i)=>{ if(sp.classList.contains('can')) sp.onclick=()=>askHint(list[i]); });
+  }
   const h=el('hint');
   const shown0=n=> n>1?TF('{0} letters of each word are showing.',n):T('1 letter of each word is showing.');
-  if(tut) h.innerHTML=tutMsg();
+  if(coach) h.innerHTML=coachMsg();
   else if(endgame) h.innerHTML=T('<b>Endgame.</b> An empty row opened up — columns can park a letter in a socket, so you can reorder freely.');
   else if(challenge) h.innerHTML=TF(challenge.metric==='moves'
     ?'<b>Duel.</b> Beat <b>{0} moves</b> on this exact board.'
@@ -1256,74 +1309,40 @@ function refresh(){
     ?TF(custom.k>1?'Each word you find reveals {0} letters in the others.':'Each word you find reveals a letter in the others.',custom.k)
     :T('No free letters — every word is on you.');
   else h.textContent=T(N>=6?'Each word you find reveals a letter in two of the others.':'Each word you find reveals a letter in one of the others.');
-  paintHap(); paintSnd(); paintThm(); paintLang(); paintPick();
+  paintHap(); paintSnd(); paintThm(); paintLang();
+  if(!el('scGame').classList.contains('on')) paintPick();   // the menu is repainted on the way back to it
   el('cv').innerHTML=TF(career.points===1?'You have <b>{0}</b> point':'You have <b>{0}</b> points',career.points);
 }
 
-/* ---------- tutorial: a 2×4 board, five guided moves through the real engine ---------- */
-let tut=null;
-/* per-language tutorial: LANGS[x].tut = {words, rows (their scrambles), steps} */
-const TUT_EN={words:['play','word'],rows:['ypla','ordw'],steps:[null,
-  {t:'r',i:0,d:-1,msg:'Both rows are <b>amber</b> \u2014 right letters, wrong order. Slide the top row <b>left</b>: the whole line moves as one.'},
-  {t:'c',i:3,d:1, msg:'PLAY banked itself \u2014 that is all winning is. Now <b>WORD</b>: the empty lane below is parking. Pull the <b>last column down</b>.'},
-  {t:'r',i:0,d:1, msg:'Rotate the top row <b>right</b>, so the gap comes first.'},
-  {t:'r',i:1,d:1, msg:'Slide the bottom lane <b>right</b> \u2014 the W wants to sit under the gap.'},
-  {t:'c',i:0,d:-1,msg:'Lift the <b>first column up</b>. That is the whole game.'}]};
-const tutDef=()=>(LANGS[uiLang]&&LANGS[uiLang].tut)||TUT_EN;
-function tutMsg(){const e=tut&&tutDef().steps[tut.step];return e?e.msg:'';}
-function tutAllows(t,i,d){const e=tut&&tutDef().steps[tut.step];return !!e&&e.t===t&&e.i===i&&e.d===d;}
-function tutStep(){
-  if(!tut) return;
-  refresh();
-  const e=tutDef().steps[tut.step];
-  let c=document.getElementById('tutCue');
-  if(!e){ if(c)c.remove(); return; }
-  if(!c){ c=document.createElement('div'); c.id='tutCue'; }
-  boardEl.appendChild(c);
-  c.className = e.t==='r' ? 'h' : 'v';
-  c.style.setProperty('--d',e.d);
-  c.innerHTML = ARROW(e.t==='r' ? (e.d===1?0:180) : (e.d===1?90:-90));
-  if(e.t==='r'){ c.style.left=(N*step/2)+'px'; c.style.top=(e.i*step+step/2)+'px'; }
-  else{ c.style.left=(e.i*step+step/2)+'px'; c.style.top=(grid.length*step/2)+'px'; }
+/* ---------- the first game: a real board, with a coach on the hint line ----------
+   No guided tutorial. A newcomer gets a live 4×4 — a deal picked for plain words — and
+   the hint line reads the board with them through the first move and the first word,
+   then hands over to the ordinary hints. Whatever they do with it counts as a game:
+   the portal's first minute is this board, not a lesson before it. */
+let coach=null, pendingCoach=false;
+function startFirstGame(){
+  custom=null; pendingCustom=null; challenge=null; pendingChallenge=null; pendingLang=null;
+  pendingCoach=true; start('free',LANGS[uiLang].first,false,4);
 }
-function tutMoved(){
-  if(!tut) return;
-  if(tut.step>=2&&tut.step<=4){ tut.step++; tutStep(); }
+function coachMsg(){
+  if(found>=1) return T('Banked — and that opened a letter in another word. Keep going.');
+  if(mv>0) return T('<b>Amber</b> row: the right letters, wrong order. <b>Green</b>: a word — it banks itself. <b>Red</b>: a real word, but not one of the four.');
+  return T('Four words are hidden here, one letter of each showing. <b>Drag any row sideways</b>, or a column up and down. The whole line moves.');
 }
-function tutBankAdvance(){
-  if(!tut) return;
-  if(found===1){ tut.step=2; tutStep(); }
+/* an arrow gliding along the top row until the first move */
+function coachCue(){
+  let c=document.getElementById('coachCue');
+  if(!coach||mv>0){ if(c)c.remove(); return; }
+  if(!c){ c=document.createElement('div'); c.id='coachCue'; c.className='h';
+    c.style.setProperty('--d',1); c.innerHTML=ARROW(0); boardEl.appendChild(c); }
+  c.style.left=(N*step/2)+'px'; c.style.top=(step/2)+'px';
 }
-function tutFinish(){
-  tut=null; career.tutorialDone=true; save();
-  const tc=document.getElementById('tutCue'); if(tc)tc.remove();
-  el('card').innerHTML=
-    '<h2>'+T('You\u2019ve got it')+'</h2>'+
-    '<p class="sub" style="margin-top:8px">'+T('Rows and columns move whole lines. Green rows bank themselves. Everything else is reading the colors.')+'</p>'+
-    '<button class="btn primary" id="tPlay">'+T('Play a real board')+'</button>'+
-    '<button class="btn ghost" id="tMenu">'+T('Menu')+'</button>';
-  el('tPlay').onclick=()=>{ el('veil').classList.remove('on'); start('free',undefined,false,4); };
-  el('tMenu').onclick=()=>{ el('veil').classList.remove('on'); toMenu(); };
-  el('veil').classList.add('on');
+const killCue=()=>{const c=document.getElementById('coachCue'); if(c)c.remove();};
+function coachBanked(){
+  career.tutorialDone=true; save();          // a word banked: the idea has landed
+  if(found>=2) coach=null;                   // after the second, the coach stops talking
 }
-function startTutorial(){
-  tut=null; custom=null; pendingCustom=null; challenge=null; pendingChallenge=null;
-  pendingLang=null; useGameLang(uiLang);
-  const td=tutDef();
-  N=td.words[0].length; CAP=2; mode='free'; isDaily=false;
-  show('scGame'); el('veil').classList.remove('on');
-  tiles.clear(); nextId=0; boardEl.innerHTML='';
-  grid=[]; targets=[]; endgame=false; busy=false; paused=false;
-  td.words.forEach(w=>targets.push({w,shown:[0,1],fresh:[],done:false}));
-  td.rows.forEach(rw=>grid.push([...rw].map(mkTile)));
-  mv=0; found=0; score=0; done=null; usedContinue=false; bankedScore=0; hintsUsed=0; undoState=null;
-  dirs={L:0,R:0,U:0,D:0};
-  stopClock(); timeLeft=60; t0=0; tAcc=0; reds=0; foundReal.clear(); hideFlash();
-  tut={step:1};
-  build(); refresh();
-  requestAnimationFrame(()=>{layout(); tutStep();}); Portal.play();
-}
-el('bTut').onclick=()=>startTutorial();
+el('bTut').onclick=()=>startFirstGame();
 /* tapping the wordmark drops a stone in it: the letter you hit bounces first
    and the rest follow outward, each a little later and a little lower */
 (()=>{
@@ -1342,12 +1361,7 @@ el('bTut').onclick=()=>startTutorial();
     });
   });
 })();
-function skipTutorial(){
-  tut=null; career.tutorialDone=true; save();
-  const tc=document.getElementById('tutCue'); if(tc)tc.remove();
-  toMenu();
-}
-el('bSkip').onclick=()=>{ if(tut) skipTutorial(); };
+
 /* ---------- screens ---------- */
 function show(id){['scMenu','scGame','scRules','scStats'].forEach(s=>el(s).classList.toggle('on',s===id));hideFlash();
   layout();}   /* the scroll flag belongs to layout(), which now knows where we are */
@@ -1388,7 +1402,7 @@ const ACH=[
   {id:'r15', name:'Time lord',         desc:'15 words in one Rush run',          test:c=>(c.hardBest||0)>=15,      p:c=>c.hardBest||0,           n:15},
   {id:'six', name:'Heavyweight',       desc:'Solve a 6×6 board',                 test:c=>!!(c.hist&&c.hist[6]&&Object.keys(c.hist[6]).length)},
   {id:'pure',name:'No help needed',    desc:'Solve a board without hints',       test:c=>!!(c.bestBy&&Object.keys(c.bestBy).length)},
-  {id:'fast',name:'Lightning',         desc:'Solve a board in 90 seconds',       test:c=>c.bestTime!=null&&c.bestTime<=90},
+  {id:'fast',name:'Lightning',         desc:'Solve a board in 90 seconds, no hints', test:c=>c.bestTime!=null&&c.bestTime<=90},
   {id:'red25',name:'Sceptic',          desc:'Rule out 25 red words',             test:c=>(c.redsTotal||0)>=25,     p:c=>c.redsTotal||0,          n:25},
   {id:'red100',name:'Lexicographer',   desc:'Rule out 100 red words',            test:c=>(c.redsTotal||0)>=100,    p:c=>c.redsTotal||0,          n:100},
   {id:'c100', name:'Collector',        desc:'Find 100 different words',          test:c=>(c.collected||[]).length>=100,  p:c=>(c.collected||[]).length, n:100},
@@ -1427,6 +1441,10 @@ function checkAch(){
 }
 function paintStats(){
   const c=career, uniq=(c.collected||[]).length;
+  /* against the whole dictionary of the board language, all three sizes — not the size
+     of whichever board happened to be played last */
+  const dictAll=[4,5,6].reduce((n,L)=>n+BANK[L].DICT.size,0);
+  const inDict=(c.collected||[]).filter(w=>BANK[w.length]&&BANK[w.length].DICT.has(w)).length;
   const rate=c.freeGames?Math.round(100*c.wins/c.freeGames):0;
   const avg=c.wins?Math.round(c.freeMoves/c.wins):null;
   const avgW=c.hardGames?(c.hardWords/c.hardGames).toFixed(1):'—';
@@ -1455,7 +1473,7 @@ function paintStats(){
       ((c.duelsTied)?box('Tied',c.duelsTied):'')+
     `</div>`:'')+
     sect('Collection')+`<div class="grid2">`+
-      box('Words found',uniq)+box('Of dictionary',Math.round(1000*uniq/DICT.size)/10+'%')+
+      box('Words found',uniq)+box('Of dictionary',Math.round(1000*inDict/dictAll)/10+'%')+
     `</div>`+
     `<div class="sect">${T('Achievements')} · ${ACH.filter(d=>(c.ach||{})[d.id]).length}/${ACH.length}</div><div class="grid2">`+
       ACH.map(d=>`<div class="kpi ach ${(c.ach||{})[d.id]?'earned':'locked'}"><dt>${T(d.name)}</dt><dd>${T(d.desc)}</dd></div>`).join('')+
@@ -1467,6 +1485,15 @@ el('bStats').onclick=()=>{paintStats();show('scStats');};
 el('rBack').onclick=()=>show('scMenu');
 el('sBack').onclick=()=>show('scMenu');
 el('bWipe').onclick=()=>{
+  /* two taps a few seconds apart — one stray touch must not wipe a career */
+  const b=el('bWipe');
+  const disarm=()=>{clearTimeout(b.armT); delete b.dataset.armed; b.textContent=T('Reset all statistics');};
+  if(!b.dataset.armed){
+    b.dataset.armed='1'; b.textContent=T('Tap again to reset everything');
+    clearTimeout(b.armT); b.armT=setTimeout(disarm,3000);
+    return;
+  }
+  disarm();
   Object.assign(career,{deals:0,wins:0,best:null,hardBest:0,points:30,
     freeGames:0,freeMoves:0,hardGames:0,hardWords:0,collected:[],hints:0,
     daily:null,streak:0,maxStreak:0,bestBy:{},freeTime:0,bestTime:null,redsTotal:0,hist:{},
@@ -1475,18 +1502,20 @@ el('bWipe').onclick=()=>{
 };
 function toMenu(){
   Portal.stop();
+  if(coach){ coach=null; killCue(); career.tutorialDone=true; }   // one look at a board is the lesson
   if(!done){stopClock(); career.deals++; save();}
   el('veil').classList.remove('on'); show('scMenu'); refresh();
 }
 let isDaily=false;
 function start(m,s,daily,size){
-  tut=null; const tc=document.getElementById('tutCue'); if(tc)tc.remove();
+  coach=pendingCoach?{}:null; pendingCoach=false; killCue();
   custom=pendingCustom; pendingCustom=null;
   challenge=pendingChallenge; pendingChallenge=null;
   useGameLang(pendingLang||uiLang); pendingLang=null;
   const lp=career.langsPlayed||(career.langsPlayed=[]);
   if(!lp.includes(gameLang)){ lp.push(gameLang); save(); checkAch(); }
   N = custom ? custom.l : (daily ? 5 : (size||size===0 ? size : N));
+  if(daily){ dailyKey=todayKey(); s=dailySeedOf(dailyKey); }
   mode=m; isDaily=!!daily; show('scGame'); el('veil').classList.remove('on');
   deal(s); requestAnimationFrame(layout); Portal.play();
 }
@@ -1531,15 +1560,27 @@ function showEnd(){
     if(mine!==null&&(challenge.metric==='moves'?mine<challenge.target:mine>challenge.target))
       challenge={metric:challenge.metric,target:mine,full:ch};
   }
-  /* the ladder: a solved board sells the next rung — 5×5 to a 4×4 winner, a first
-     Rush run to anyone who has never raced. A rung shows only while unclimbed,
-     so the nudge retires itself for players who have already been up there. */
+  /* the ladder: a solved board sells the next rung — 5×5 to a 4×4 winner, a first Rush
+     run to anyone who has never raced, and today's board once those are climbed. A rung
+     shows only while unclimbed, so the nudge retires itself for players who have been up there. */
   let rung=null;
+  const dailyOpen=!isDaily&&!custom&&!challenge&&!dailyDone();
   if(done==='win'&&!custom&&!challenge&&!hard){
     if(N===4&&!(career.hist&&career.hist[5])) rung={label:'Ready for 5×5?',m:'free',size:5};
     else if(!career.hardGames) rung={label:'Try Rush — each word buys time',m:'hard',size:N};
   }
+  if(!rung&&dailyOpen&&(hard||done==='win')) rung={label:'Today’s board — one for everyone',daily:true};
+  /* whoever steps off the ladder early still hears about the daily — on every card until played */
+  const dailyNote=dailyOpen&&!(rung&&rung.daily)
+    ?`<p class="sub codenote">`+T('There is also a daily board: the same one for everyone, a new one every midnight.')+`</p>`:'';
   const goal=nextGoal();
+  /* the buttons: the next round first, and first means primary. Rush is a loop, so its retry
+     leads (Continue, when on offer, ahead of it); a solved board leads with the rung. */
+  const btn=(id,label,primary)=>`<button class="btn ${primary?'primary':'ghost'}" id="${id}">${label}</button>`;
+  const again=T(challenge?'Retry this board':'Play again');
+  const actions=(hard
+    ? [canCont?['bCont',TF('Continue · {0} pts for {1}s',CONT_COST,CONT_TIME)]:null,['bAgain',again],rung?['bRung',T(rung.label)]:null]
+    : [rung?['bRung',T(rung.label)]:null,['bAgain',again]]).filter(Boolean);
   el('card').innerHTML=
     `<h2 class="word-tiles ${cls}" aria-label="${title}">${tileWord(title)}</h2>`+
     `<div class="big ${cls}">${big}</div><p class="sub">${sub}</p>`+duel+
@@ -1555,11 +1596,9 @@ function showEnd(){
       :'A challenge code — tap to copy. It carries your {0} moves: whoever enters it plays this board against that score.',
       mode==='hard'?found:mv)+`</p>`:'')+
     (goal?`<p class="sub codenote">${T('Next goal')}: ${T(goal.desc)} · ${goal.p(career)}/${goal.n}</p>`:'')+
-    `<button class="btn ghost" id="bShare">`+T('Share this deal')+`</button>`+
-    (canCont?`<button class="btn primary" id="bCont">`+TF('Continue · {0} pts for {1}s',CONT_COST,CONT_TIME)+`</button>`:'')+
-    (rung?`<button class="btn primary" id="bRung">`+T(rung.label)+`</button>`:'')+
-    `<button class="btn${canCont||rung?' ghost':' primary'}" id="bAgain">`+T(challenge?'Retry this board':'Play again')+`</button>`+
-    `<button class="btn ghost" id="bMenu">`+T('Menu')+`</button>`;
+    dailyNote+
+    actions.map((a,i)=>btn(a[0],a[1],i===0)).join('')+
+    btn('bShare',T('Share this deal'))+btn('bMenu',T('Menu'));
   el('card').querySelectorAll('.found span').forEach(sp=>sp.onclick=()=>{
     if(!el('defOut')) return;
     const w=sp.dataset.w, d=defOf(w);
@@ -1569,7 +1608,7 @@ function showEnd(){
   if(canCont) el('bCont').onclick=()=>{
     career.points-=CONT_COST; usedContinue=true; done=null;
     timeLeft=CONT_TIME; el('veil').classList.remove('on');
-    save(); startClock(); refresh(); sweep();
+    save(); startClock(); Portal.play(); refresh(); sweep();
   };
   el('bShare').onclick=()=>{
     const line = (done==='win' ? TF('solved in {0} moves',mv)
@@ -1580,15 +1619,18 @@ function showEnd(){
           :'\n'+TF('Code: {0}',dealCode()))
       +'\n'+TF('Play: {0}',shareUrl()), el('bShare'));
   };
-  if(rung) el('bRung').onclick=()=>start(rung.m,undefined,false,rung.size);
+  if(rung) el('bRung').onclick=()=>rung.daily?start('free',undefined,true):start(rung.m,undefined,false,rung.size);
   el('bAgain').onclick=()=>challenge?playCode(challenge.full):(custom?startCustom(custom):start(mode));
   el('bMenu').onclick=()=>{el('veil').classList.remove('on');show('scMenu');refresh();};
   el('veil').classList.add('on');
+  /* the leading button takes focus, so Enter or Space on a desktop is the next round */
+  const lead=el('card').querySelector('.primary');
+  if(lead) requestAnimationFrame(()=>{try{lead.focus({preventScroll:true});}catch(e){}});
   if(done==='win') confetti();
 }
 function confetti(){
   const veil=el('veil');
-  veil.querySelector('.confetti')?.remove();
+  const old=veil.querySelector('.confetti'); if(old) old.remove();   // no optional chaining: one SyntaxError on an old WebView is a dead game
   const box=document.createElement('div'); box.className='confetti';
   const colors=['#3E7C5F','#F2C14E','#CE4B41','#C96F2E','#FFFDF4'];
   for(let i=0;i<54;i++){
@@ -1606,7 +1648,7 @@ function confetti(){
   setTimeout(()=>box.remove(),4600);
 }
 function askHint(t){
-  if(done||paused||mode!=='free'||(custom&&!custom.h)||career.points<HINT_COST) return;
+  if(done||paused||mode!=='free'||(custom&&!custom.h)||career.points<HINT_COST||t.shown.length>=CAP) return;
   const wasRunning=!!clock; stopClock();
   el('card').innerHTML=
     `<h2>`+T('Reveal a letter')+`</h2>`+
@@ -1642,7 +1684,9 @@ function copyText(s){
   return legacy();
 }
 function shareText(txt,btn){
-  const ok=()=>{btn.textContent=T('Copied — send it to anyone');};
+  const was=btn.textContent;
+  const ok=()=>{btn.textContent=T('Copied — send it to anyone');
+    setTimeout(()=>{if(btn.isConnected)btn.textContent=was;},1600);};
   const fail=()=>{try{window.prompt(T('Copy this:'),txt);}catch(e){}};
   if(navigator.share) navigator.share({text:txt}).catch(e=>{
     if(e&&e.name==='AbortError') return;          // user closed the share sheet — not a failure
@@ -1665,14 +1709,14 @@ function showPause(){
   paused=true; stopClock(); Portal.stop();
   el('card').innerHTML=`<h2>`+T('Paused')+`</h2><p class="sub" style="margin-top:8px">`+
     T((mode==='hard'||(custom&&custom.t))?'The clock is stopped.':'Take your time.')+
-    (tut?'':' '+T('Quitting counts the board as played.'))+`</p>`+
-    (tut?'':`<p class="sub" style="margin-top:10px">${isDaily?T('Daily board')+' · ':custom?T('Custom board')+' · ':''}${codeChip()}</p>`+
-      `<p class="sub codenote" style="text-align:left">`+T('Click the code to copy it — entered in the menu, it rebuilds this exact board for anyone.')+`</p>`)+
+    ' '+T('Quitting counts the board as played.')+`</p>`+
+    `<p class="sub" style="margin-top:10px">${isDaily?T('Daily board')+' · ':custom?T('Custom board')+' · ':''}${codeChip()}</p>`+
+      `<p class="sub codenote" style="text-align:left">`+T('Click the code to copy it — entered in the menu, it rebuilds this exact board for anyone.')+`</p>`+
     `<button class="btn primary" id="bResume">`+T('Resume')+`</button>`+
-    (tut?'':`<button class="btn ghost" id="pShare">`+T('Share this board')+`</button>`)+
-    `<button class="btn ghost" id="bQuit">`+T(tut?'Skip tutorial':'Quit to menu')+`</button>`;
-  if(!tut) armCodeChips(el('card'));
-  if(!tut) el('pShare').onclick=()=>shareText(
+    `<button class="btn ghost" id="pShare">`+T('Share this board')+`</button>`+
+    `<button class="btn ghost" id="bQuit">`+T('Quit to menu')+`</button>`;
+  armCodeChips(el('card'));
+  el('pShare').onclick=()=>shareText(
     'Wordliz — '+T('try this board')+'\n'+TF('Code: {0}',dealCode())+
     '\n'+TF('Play: {0}',shareUrl()), el('pShare'));
   el('bResume').onclick=()=>{
@@ -1682,7 +1726,7 @@ function showPause(){
     if(mode==='hard' ? found>0 : mv>0) startClock();
     Portal.play(); sweep();
   };
-  el('bQuit').onclick=()=>{ paused=false; if(tut){skipTutorial();return;} toMenu(); };
+  el('bQuit').onclick=()=>{ paused=false; toMenu(); };
   el('veil').classList.add('on');
 }
 /* ---------- language switching: UI strings + default dictionary for new boards ---------- */
@@ -1695,7 +1739,7 @@ function applyLang(){
   const doc=el('rulesDoc');
   if(!applyLang.rulesEn) applyLang.rulesEn=doc.innerHTML;
   doc.innerHTML=(LANGS[uiLang]&&LANGS[uiLang].rules)||applyLang.rulesEn;
-  el('bTut').onclick=()=>startTutorial();       // the swap replaces the button node
+  el('bTut').onclick=()=>startFirstGame();      // the swap replaces the button node
   el('codeIn').placeholder=T('Enter a board code');
   refresh();
 }
@@ -1851,7 +1895,7 @@ function paintPick(){
 el('goPlay').onclick=()=>{
   if(pick==='daily'){
     if(dailyDone()){ shareDaily(); return; }
-    start('free',dailySeed(),true); return;
+    start('free',undefined,true); return;
   }
   if(pick==='cust'){ startCustom(cust); return; }
   start(pick==='hard'?'hard':'free',undefined,false,size);
@@ -1862,30 +1906,40 @@ function shareDaily(){
   const txt=`Wordliz ${T('daily')} ${d.date} \u2014 ${line}`+
     (career.streak>1?' \u00b7 '+TF('{0}-day streak',career.streak):'')+
     `\n${shareUrl()}`;
-  const ok=()=>{el('goPlay').textContent=T('Copied');setTimeout(paintPick,1600);};
-  if(navigator.share) navigator.share({text:txt}).catch(()=>navigator.clipboard?.writeText(txt).then(ok,()=>{}));
-  else navigator.clipboard?.writeText(txt).then(ok,()=>{});
+  shareText(txt,el('goPlay'));     // the same share sheet, clipboard and fallbacks as every other share
 }
 
 /* one code, any host: PS9WXB (5×5), 4/6-prefixed sizes, C-codes with custom rules.
    Used by #hash links and by the menu's code box — on itch.io links can't reach the
    iframe, so typing the code is the way in. */
-async function playCode(raw,pfx){
-  pfx=pfx||'';
+async function playCode(raw){
+  const ok=await parseCode(raw,'');
+  if(!ok) pendingLang=null;        // a language claimed by a code that never opened must not leak into the next deal
+  return ok;
+}
+async function parseCode(raw,pfx){
   raw=(raw||'').toUpperCase()
     .replace(/[АВЕКМНОРСТУХ]/g,m=>('ABEKMHOPCTYX'['АВЕКМНОРСТУХ'.indexOf(m)]))  // cyrillic lookalikes
     .replace(/[^0-9A-Z]/g,'');
   /* language envelope: one letter outside the whole code (English carries none).
      Strip it, load that dictionary, and parse the rest as usual; pfx keeps the
      stripped letter so challenge codes stay whole for retries. */
-  const lc=Object.keys(LANGS).find(k=>LANGS[k].letter&&LANGS[k].letter===raw[0]);
+  /* The envelope letter is a base36 digit too, so a plain English 5×5 code can begin
+     with it. Length tells them apart: an enveloped code is at least seven characters
+     (letter + six-digit seed), and every English code longer than six opens with a size
+     digit, B, R or C — never an envelope letter. At exactly six the first character is
+     part of the seed. */
+  const lc=raw.length>6 && Object.keys(LANGS).find(k=>LANGS[k].letter&&LANGS[k].letter===raw[0]);
   if(lc){
     try{await loadLang(lc);}catch(e){return false;}
     pendingLang=lc;
-    const ok=await playCode(raw.slice(1),pfx+raw[0]);
+    const ok=await parseCode(raw.slice(1),pfx+raw[0]);
     if(!ok) pendingLang=null;
     return ok;
   }
+  /* no envelope is the bare language's mark: a code opens in its own language, not the
+     interface's — a Russian player entering an English friend's code gets that board */
+  if(!pfx) pendingLang=Object.keys(LANGS).find(k=>!LANGS[k].letter)||'en';
   /* challenge codes: B<mv:2×base36><board code> beats moves, R<words:2×base36><rush board>
      — a plain code replayed in Rush, or a C-code whose own mode is Rush.
      Lengths 9/10/16/18 never collide with plain (6/7) or C (13/15) codes. */
@@ -1894,7 +1948,7 @@ async function playCode(raw,pfx){
     if(!Number.isFinite(target)||target<1) return false;
     if(raw[0]==='B'||rest[0]==='C'){
       pendingChallenge={metric:raw[0]==='B'?'moves':'words',target,full:pfx+raw};
-      if(await playCode(rest,pfx)) return true;
+      if(await parseCode(rest,pfx)) return true;
       pendingChallenge=null; return false;
     }
     let sz=5, code=rest;
@@ -1924,10 +1978,6 @@ async function playCode(raw,pfx){
   }
   return false;
 }
-(function fromLink(){
-  const raw=(location.hash||'').slice(1);
-  if(raw) setTimeout(()=>playCode(raw),0);
-})();
 const goCode=()=>{
   const v=el('codeIn').value;
   if(!v.trim()) return;
@@ -1940,22 +1990,35 @@ const goCode=()=>{
 };
 el('codeGo').onclick=goCode;
 el('codeIn').addEventListener('keydown',e=>{if(e.key==='Enter')goCode();});
+/* any card answers Enter and Space with its leading button — the end card's next round,
+   the pause card's Resume — when no button of its own holds the focus to answer itself */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ') return;
+  if(!el('veil').classList.contains('on')||el('card').contains(document.activeElement)) return;
+  const lead=el('card').querySelector('.primary')||el('card').querySelector('button');
+  if(!lead) return;
+  e.preventDefault(); lead.click();
+});
 el('bPause').onclick=showPause;
 el('bUndo').onclick=()=>{
-  if(!undoState||done||busy||paused||tut) return;
+  if(!undoState||done||busy||paused) return;
   grid=undoState.g.map(r=>[...r]); mv=undoState.mv; dirs={...undoState.dirs}; undoState=null;
   Haptics.tick(); Sfx.tick(); paint(null); refresh();
 };
 /* the hint goes to the word with the fewest letters revealed */
 el('bHint').onclick=()=>{
   if(mode!=='free'||done||paused||(custom&&!custom.h)||career.points<HINT_COST) return;
-  const pool=targets.filter(t=>!t.done&&t.shown.length<N);
+  const pool=targets.filter(t=>!t.done&&t.shown.length<CAP);
   if(!pool.length) return;
   pool.sort((a,b)=>a.shown.length-b.shown.length);
   askHint(pool[0]);
 };
 document.addEventListener('visibilitychange',()=>{
-  if(document.hidden && !done && !paused && el('scGame').classList.contains('on')) showPause();
+  if(!document.hidden) return;
+  if(drag) endDrag(false);                      /* a finger the page will never see lift */
+  /* a card already up (a hint offer) has stopped the clock itself; pausing over it
+     would throw the offer away */
+  if(!done && !paused && el('scGame').classList.contains('on') && !el('veil').classList.contains('on')) showPause();
 });
 
 /* ---------- input: the line follows your finger ---------- */
@@ -1998,10 +2061,7 @@ function endDrag(apply){
   let n=Math.round(d.off/step);
   if(n===0&&Math.abs(d.off)>step*0.35) n=d.off>0?1:-1;   /* quick flick */
   if(!apply||done||busy||paused||(d.axis==='c'&&grid.length<2)) n=0;
-  if(tut&&n!==0){
-    const e=tutDef().steps[tut.step], idx=d.axis==='r'?d.r:d.c;
-    n=(e&&e.t===d.axis&&e.i===idx&&Math.sign(n)===e.d)?e.d:0;
-  }
+
   if(n!==0){
     pushUndo();
     const dir=n>0?1:-1;
@@ -2020,19 +2080,20 @@ function endDrag(apply){
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     for(const it of d.items) it.el.classList.remove('notrans');
     paint(null);                               /* then glide into their cells */
-    if(n!==0){scanReds();refresh();sweep();if(tut)tutMoved();}
+    if(n!==0){scanReds();refresh();sweep();if(coach)killCue();}
   }));
 }
 boardEl.addEventListener('pointerdown',e=>{
   if(done||paused||busy) return;
+  if(drag||e.isPrimary===false) return;         /* a second finger must not take over the line */
   const rc=boardEl.getBoundingClientRect();
   const c=Math.floor((e.clientX-rc.left)/step), r=Math.floor((e.clientY-rc.top)/step);
   if(r<0||c<0||r>=grid.length||c>=N) return;
-  drag={x:e.clientX,y:e.clientY,r,c,axis:null,off:0,items:[],clones:[],notch:0};
+  drag={id:e.pointerId,x:e.clientX,y:e.clientY,r,c,axis:null,off:0,items:[],clones:[],notch:0};
   try{boardEl.setPointerCapture(e.pointerId);}catch(err){}
 });
 boardEl.addEventListener('pointermove',e=>{
-  if(!drag) return;
+  if(!drag||e.pointerId!==drag.id) return;
   const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
   if(!drag.axis){
     if(Math.hypot(dx,dy)<8) return;
@@ -2042,8 +2103,11 @@ boardEl.addEventListener('pointermove',e=>{
   }
   moveDrag(drag.axis==='r'?dx:dy);
 });
-boardEl.addEventListener('pointerup',()=>{if(drag)endDrag(true);});
-boardEl.addEventListener('pointercancel',()=>{if(drag)endDrag(false);});
+/* on the window, not the board: when setPointerCapture is refused, a finger lifted off
+   the board never reports back to it, and the line would hang mid-slide with its clones */
+window.addEventListener('pointerup',e=>{if(drag&&e.pointerId===drag.id)endDrag(true);});
+window.addEventListener('pointercancel',e=>{if(drag&&e.pointerId===drag.id)endDrag(false);});
+window.addEventListener('blur',()=>{if(drag)endDrag(false);});
 window.addEventListener('resize',layout);
 /* the hint line and the clue chips are rewritten on every move and change height as
    they wrap — the board has to give those pixels back, or the page outgrows the frame
@@ -2080,13 +2144,17 @@ async function load(){
     Sfx.on=career.sound!==false;
     applyTheme();
     if(career.daily && career.daily.date!==todayKey() && career.daily.date!==yesterKey()) career.streak=0;
-    if(career.lang&&career.lang!==uiLang&&LANGS[career.lang]) switchUiLang(career.lang);
+    if(career.lang&&career.lang!==uiLang&&LANGS[career.lang]) await switchUiLang(career.lang);
     refresh();
   }catch(e){}
 }
 
 refresh(); load().then(()=>{
-  if(!career.tutorialDone && !career.deals && !location.hash) setTimeout(startTutorial,120);
+  /* a #code link opens only once the career is in: starting a game saves it, and a
+     save that beat the load would write a blank career over the real one */
+  const link=(location.hash||'').slice(1);
+  if(link) playCode(link);
+  else if(!career.tutorialDone && !career.deals) setTimeout(startFirstGame,120);
   checkAch();          // retroactive unlocks for careers built before achievements existed
   /* the saved career is the last thing the first screen waits on, so this is the honest
      moment to call the game loaded — it is what a portal measures conversion against */
